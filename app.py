@@ -176,7 +176,7 @@ all_player_names = load_all_player_names()
 # ============================================================
 # HEADER
 # ============================================================
-st.title("🎮 DegStats")
+st.title("📊 Overview")
 st.caption("Brawl Stars — Competitive Match Analysis")
 st.markdown("---")
 
@@ -455,10 +455,13 @@ if not df_kpis.empty:
     c1.metric("Total Records",  f"{df_kpis['total_records'][0]:,}")
     c2.metric("Total Games",    f"{df_kpis['total_games'][0]:,}")
     c3.metric("Unique Players", f"{df_kpis['unique_players'][0]:,}")
-    c4.metric("Last Update",    str(df_kpis["last_update"][0])[:16] + " UTC")
-
-st.markdown("---")
-
+    
+    # Customização para diminuir a fonte do Last Update
+    last_update_str = str(df_kpis["last_update"][0])[:16] + " UTC"
+    c4.markdown(f"""
+        <div style="font-size: 14px; color: #808495; margin-bottom: 4px;">Last Update</div>
+        <div style="font-size: 24px; font-weight: 600;">{last_update_str}</div>
+    """, unsafe_allow_html=True)
 # ============================================================
 # MAPS
 # ============================================================
