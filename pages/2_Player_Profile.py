@@ -1,4 +1,4 @@
-# pages/2_Tag_Lookup.py
+# pages/2_Player_Profile.py
 import streamlit as st
 import requests
 import base64
@@ -8,7 +8,8 @@ import pandas as pd
 # ============================================================
 # PAGE CONFIG
 # ============================================================
-sst.set_page_config(
+
+st.set_page_config(
     page_title="Player Profile — DegStats",
     page_icon="assets/logo.png",
     layout="wide"
