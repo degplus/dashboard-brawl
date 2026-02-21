@@ -17,6 +17,18 @@ st.set_page_config(
     layout="wide"
 )
 
+def set_gradient_background():
+    page_bg_img = """
+    <style>
+    .stApp {
+        background-image: linear-gradient(to bottom right, #0e1117, #1c1f33, #2a2d4a);
+    }
+    </style>
+    """
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
+set_gradient_background()
+
 # Adiciona a logo no topo da sidebar
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
@@ -499,7 +511,7 @@ else:
             "map":       st.column_config.TextColumn("Map"),
             "mode":      st.column_config.TextColumn("Mode"),
             "games":     st.column_config.NumberColumn("Games",    format="%d"),
-            "pct_total": st.column_config.ProgressColumn("Global", format="%.1f%%", min_value=0, max_value=100),
+            "pct_total": st.column_config.ProgressColumn("Game Rate", format="%.1f%%", min_value=0, max_value=100),
             "wins":      st.column_config.NumberColumn("Wins",     format="%d"),
             "losses":    st.column_config.NumberColumn("Losses",   format="%d"),
             "win_rate":  st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
@@ -1209,10 +1221,10 @@ else:
                 st.caption("Click a row to view the draft")
 
                 df_matchups["my_result_show"]  = df_matchups["my_result"].apply(
-                    lambda x: "WIN" if x == "victory" else "LOSS"
+                    lambda x: "🏆 WIN" if x == "victory" else "💀 LOSS"
                 )
                 df_matchups["opp_result_show"] = df_matchups["opp_result"].apply(
-                    lambda x: "WIN" if x == "victory" else "LOSS"
+                    lambda x: "🏆 WIN" if x == "victory" else "💀 LOSS"
                 )
 
                 ev_match = st.dataframe(
