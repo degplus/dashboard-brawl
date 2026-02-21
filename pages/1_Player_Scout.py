@@ -15,9 +15,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # ============================================================
 st.set_page_config(
     page_title="Player Scout — DegStats",
-    page_icon="🔍"
+    page_icon="assets/logo.png",
     layout="wide"
 )
+
+st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 # ============================================================
 # BIGQUERY CLIENT

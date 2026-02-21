@@ -8,11 +8,13 @@ import pandas as pd
 # ============================================================
 # PAGE CONFIG
 # ============================================================
-st.set_page_config(
+sst.set_page_config(
     page_title="Player Profile — DegStats",
-    page_icon="🏷️"
+    page_icon="assets/logo.png",
     layout="wide"
 )
+
+st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)

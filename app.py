@@ -12,10 +12,13 @@ import base64
 from PIL import Image
 
 st.set_page_config(
-    page_title="DegStats - Brawl Stars",
-    page_icon="📊",
+    page_title="DegStats - Overview",
+    page_icon="assets/logo.png",
     layout="wide"
 )
+
+# Adiciona a logo no topo da sidebar
+st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
