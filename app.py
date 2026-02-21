@@ -9,6 +9,7 @@ from datetime import timezone
 import json
 import requests
 import base64
+from PIL import Image
 try:
     page_icon = Image.open("assets/logo.png")
 except:
@@ -16,7 +17,7 @@ except:
 
 st.set_page_config(
     page_title="DegStats - Brawl Stars",
-    page_icon=page_icon,
+    page_icon="📊",
     layout="wide"
 )
 

@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # ============================================================
 st.set_page_config(
     page_title="Player Scout — DegStats",
-    page_icon=Image.open("assets/logo.png"),
+    page_icon="🔍"
     layout="wide"
 )
 
