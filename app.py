@@ -9,7 +9,17 @@ from datetime import timezone
 import json
 import requests
 import base64
-page_icon=Image.open("assets/logo.png"),
+try:
+    page_icon = Image.open("assets/logo.png")
+except:
+    page_icon = "📊"
+
+st.set_page_config(
+    page_title="DegStats - Brawl Stars",
+    page_icon=page_icon,
+    layout="wide"
+)
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============================================================
