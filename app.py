@@ -10,10 +10,6 @@ import json
 import requests
 import base64
 from PIL import Image
-try:
-    page_icon = Image.open("assets/logo.png")
-except:
-    page_icon = "📊"
 
 st.set_page_config(
     page_title="DegStats - Brawl Stars",
