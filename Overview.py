@@ -236,6 +236,10 @@ st.markdown("---")
 # ============================================================
 with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)
+    if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+        st.cache_data.clear()
+        st.rerun()
+        
     st.markdown("---")
     st.header("🔍 Filters")
 
@@ -267,12 +271,7 @@ with st.sidebar:
 
     st.markdown("---")
 
-    if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-        st.cache_data.clear()
-        st.rerun()
-        st.divider()
-    
-    
+       
 
 # ============================================================
 # GET FILTER OPTIONS
