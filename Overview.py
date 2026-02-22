@@ -105,7 +105,7 @@ set_gradient_background()
 # Adiciona a logo no topo da sidebar
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 
 # ============================================================
