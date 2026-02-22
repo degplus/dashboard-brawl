@@ -1,8 +1,4 @@
 # pages/1_Player_Scout.py
-# Proteção de login
-if not st.session_state.get("authentication_status"):
-    st.warning("🔒 Please login on the Overview page.")
-    st.stop()
 
 import streamlit as st
 from google.oauth2 import service_account

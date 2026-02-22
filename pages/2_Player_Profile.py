@@ -1,9 +1,4 @@
 # pages/2_Player_Profile.py
-# Proteção de login
-if not st.session_state.get("authentication_status"):
-    st.warning("🔒 Please login on the Overview page.")
-    st.stop()
-
 import streamlit as st
 import requests
 import base64
