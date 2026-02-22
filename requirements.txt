@@ -6,3 +6,5 @@ pandas>=2.0.0
 plotly>=5.18.0
 Pillow>=10.0.0
 db-dtypes>=1.1.0
+streamlit-authenticator
+pyyaml

@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_authenticator as stauth
 from google.oauth2 import service_account
 from google.cloud import bigquery
 import pandas as pd
@@ -10,12 +11,80 @@ import json
 import requests
 import base64
 from PIL import Image
+import subprocess
 
 st.set_page_config(
     page_title="DegStats - Overview",
     page_icon="assets/logo.png",
     layout="wide"
 )
+
+# ============================================================
+# 🔐 SISTEMA DE LOGIN (O PORTEIRO)
+# ============================================================
+# Pegamos as credenciais que você salvou no secrets.toml
+config = st.secrets
+
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
+)
+
+# Renderiza a caixa de login no corpo principal (main) do site
+# O 'fields' permite que o usuário digite o Username e Password
+name, authentication_status, username = authenticator.login(location='main')
+
+if authentication_status is False:
+    st.error('Username/password is incorrect')
+    st.stop() # 🛑 Trava o app aqui
+elif authentication_status is None:
+    st.warning('Please enter your username and password')
+    st.stop() # 🛑 Trava o app aqui até ele digitar algo
+
+# ============================================================
+# SE CHEGOU AQUI, O USUÁRIO ESTÁ LOGADO! 🎉
+# ============================================================
+
+# ============================================================
+# SIDEBAR - ÁREA LOGADA
+# ============================================================
+with st.sidebar:
+    st.write(f"Logged as: **{name}**")
+    
+    # --- BLOCO EXCLUSIVO DO ADMIN ---
+    if username == "DegAdmin":
+        st.divider()
+        st.subheader("🛠️ Admin Panel")
+        st.caption("Use these tools to manage the dashboard data.")
+        
+        if st.button("🔄 Force Data Update (Git)", use_container_width=True, type="primary"):
+            try:
+                # 1. Executa o seu script de atualização
+                # O './' indica que o arquivo está na mesma pasta
+                result = subprocess.run(["bash", "./gitupdate.sh"], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    st.success("Data updated successfully!")
+                    # 2. Limpa o cache para o Streamlit ler os arquivos novos
+                    st.cache_data.clear()
+                    # 3. Recarrega o app para mostrar os dados novos
+                    st.rerun()
+                else:
+                    st.error(f"Error running script: {result.stderr}")
+            except Exception as e:
+                st.error(f"Critical failure: {e}")
+    else:
+        # ISSO É O QUE APARECE PARA O USER
+        st.divider()
+        st.info("📊 Data is updated daily at 00:00 UTC.")
+        st.caption("Contact the admin for custom reports.")
+    # --------------------------------
+    
+    st.divider()
+    # O botão de Logout fica visível para todos
+    authenticator.logout('Logout', 'sidebar')
 
 def set_gradient_background():
     page_bg_img = """
