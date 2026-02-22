@@ -44,18 +44,21 @@ authenticator = stauth.Authenticate(
 
 # Renderiza a caixa de login no corpo principal (main) do site
 # O 'fields' permite que o usuário digite o Username e Password
-authenticator.login(location='main')
-name               = st.session_state.get("name")
-authentication_status = st.session_state.get("authentication_status")
-username           = st.session_state.get("username")
+# Tenta restaurar sessão do cookie primeiro
+if not st.session_state.get("authentication_status"):
+    authenticator.login(location='main')
 
+authentication_status = st.session_state.get("authentication_status")
+name                  = st.session_state.get("name")
+username              = st.session_state.get("username")
 
 if authentication_status is False:
-    st.error('Username/password is incorrect')
-    st.stop() # 🛑 Trava o app aqui
-elif authentication_status is None:
-    st.warning('Please enter your username and password')
-    st.stop() # 🛑 Trava o app aqui até ele digitar algo
+    st.error("Username/password is incorrect")
+    st.stop()
+elif not authentication_status:
+    st.warning("Please enter your username and password")
+    st.stop()
+
 
 # ============================================================
 # SE CHEGOU AQUI, O USUÁRIO ESTÁ LOGADO! 🎉
