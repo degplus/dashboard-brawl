@@ -72,10 +72,7 @@ with st.sidebar:
         st.divider()
         st.subheader("🛠️ Admin Panel")
         st.caption("Use these tools to manage the dashboard data.")
-        if st.button("🔄 Force Data Update", use_container_width=True, type="primary"):
-            st.cache_data.clear()
-            st.rerun()
-
+        
     else:
         st.divider()
     # O botão de Logout fica visível para todos
