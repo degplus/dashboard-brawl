@@ -24,25 +24,28 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🚫 CSS NUCLEAR: ESCONDE RODAPÉ, HEADER E MENU
+# 🚫 LIMPEZA VISUAL TOTAL (Modo Fantasma)
 # ============================================================
 st.markdown("""
     <style>
-        /* Esconde o cabeçalho padrão */
-        header {visibility: hidden;}
+        /* 1. Cabeçalho e Toolbar (GitHub, Settings, etc) */
+        header {visibility: hidden !important;}
+        [data-testid="stHeader"] {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
         
-        /* Esconde a barra de ferramentas (3 pontinhos, GitHub, etc) */
-        [data-testid="stToolbar"] {visibility: hidden; height: 0%;}
+        /* 2. Rodapé Padrão do Streamlit */
+        footer {visibility: hidden !important; height: 0px !important;}
+        [data-testid="stFooter"] {display: none !important;}
         
-        /* Esconde o rodapé padrão */
-        footer {visibility: hidden;}
-        
-        /* Tenta esconder o badge 'Hospedado com Streamlit' (vermelho) */
-        .stApp > footer {display: none !important;}
+        /* 3. O Alvo Principal: Badge do Criador e 'Hosted with Streamlit' */
+        /* Esconde qualquer container que tenha a classe viewerBadge */
         div[class*="viewerBadge"] {display: none !important;}
         
-        /* Esconde botão de Deploy */
-        .stAppDeployButton {display: none !important;}
+        /* Esconde qualquer link que aponte para o GitHub no rodapé */
+        footer a[href*="github.com"] {display: none !important;}
+        
+        /* Remove o espaço em branco extra no rodapé */
+        .stApp {margin-bottom: -100px !important;}
     </style>
 """, unsafe_allow_html=True)
 
