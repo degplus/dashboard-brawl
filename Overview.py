@@ -21,32 +21,31 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🔐 SISTEMA DE LOGIN
+# 🔐 SISTEMA DE LOGIN (O PORTEIRO)
 # ============================================================
-
-# FIX 1: Converte st.secrets AttrDict → dict puro mutável
+# Pegamos as credenciais que você salvou no secrets.toml
+# Converte st.secrets (imutável) para dict Python normal
 def to_plain_dict(obj):
-    if hasattr(obj, "items"):
+    if hasattr(obj, 'items'):
         return {k: to_plain_dict(v) for k, v in obj.items()}
     return obj
 
 credentials = to_plain_dict(st.secrets["credentials"])
+cookie_cfg  = to_plain_dict(st.secrets["cookie"])
+
 
 authenticator = stauth.Authenticate(
     credentials,
-    st.secrets["cookie"]["name"],
-    st.secrets["cookie"]["key"],
-    st.secrets["cookie"]["expiry_days"]
+    cookie_cfg["name"],
+    cookie_cfg["key"],
+    cookie_cfg["expiry_days"]
 )
 
-# FIX 2: Chama login SEMPRE (para ler o cookie)
-authenticator.login(location='main')
 
-# FIX 3: Race condition — dá 1 rerun para o JS do CookieManager terminar
-if st.session_state.get("authentication_status") is None:
-    if "cookie_checked" not in st.session_state:
-        st.session_state["cookie_checked"] = True
-        st.rerun()
+# Renderiza a caixa de login no corpo principal (main) do site
+# O 'fields' permite que o usuário digite o Username e Password
+# Chama login SEMPRE — ele lê o cookie automaticamente se existir
+authenticator.login(location='main')
 
 authentication_status = st.session_state.get("authentication_status")
 name                  = st.session_state.get("name")
@@ -58,7 +57,6 @@ if authentication_status is False:
 elif not authentication_status:
     st.warning("Please enter your username and password")
     st.stop()
-
 
 
 
@@ -105,36 +103,8 @@ set_gradient_background()
 # Adiciona a logo no topo da sidebar
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-
-
-# ============================================================
-# HIDE STREAMLIT STYLE
-# ============================================================
-def hide_streamlit_style():
-    """
-    Remove todos os elementos padrões do Streamlit (Menu, Footer, Header, Deploy button).
-    Deixa o app com cara de site nativo.
-    """
-    hide_css = """
-        <style>
-        /* Esconde o menu hambúrguer (3 riscos no canto superior direito) */
-        #MainMenu {visibility: hidden;}
-        
-        /* Esconde o rodapé 'Made with Streamlit' */
-        footer {visibility: hidden;}
-        
-        /* Esconde o cabeçalho superior (onde fica a barra de loading e o botão Deploy) */
-        header {visibility: hidden;}
-        
-        /* Esconde a barra de ferramentas de opções (Github, Settings, etc) */
-        [data-testid="stToolbar"] {visibility: hidden;}
-        
-        /* Esconde especificamente o botão de Deploy caso ele insista em aparecer */
-        .stAppDeployButton {display:none;}
-        </style>
-    """
-    st.markdown(hide_css, unsafe_allow_html=True)
 
 
 # ============================================================
