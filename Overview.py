@@ -68,10 +68,10 @@ with st.sidebar:
     st.write(f"Logged as: **{name}**")
     
     # --- BLOCO EXCLUSIVO DO ADMIN ---
-    if username == "admin_deg":
+    if username == "DegAdmin":
         st.divider()
         st.subheader("🛠️ Admin Panel")
-        st.caption("Use these tools to manage the dashboard data.")
+        
         
     else:
         st.divider()
