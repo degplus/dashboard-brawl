@@ -21,31 +21,32 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🔐 SISTEMA DE LOGIN (O PORTEIRO)
+# 🔐 SISTEMA DE LOGIN
 # ============================================================
-# Pegamos as credenciais que você salvou no secrets.toml
-# Converte st.secrets (imutável) para dict Python normal
+
+# FIX 1: Converte st.secrets AttrDict → dict puro mutável
 def to_plain_dict(obj):
-    if hasattr(obj, 'items'):
+    if hasattr(obj, "items"):
         return {k: to_plain_dict(v) for k, v in obj.items()}
     return obj
 
 credentials = to_plain_dict(st.secrets["credentials"])
-cookie_cfg  = to_plain_dict(st.secrets["cookie"])
-
 
 authenticator = stauth.Authenticate(
     credentials,
-    cookie_cfg["name"],
-    cookie_cfg["key"],
-    cookie_cfg["expiry_days"]
+    st.secrets["cookie"]["name"],
+    st.secrets["cookie"]["key"],
+    st.secrets["cookie"]["expiry_days"]
 )
 
-
-# Renderiza a caixa de login no corpo principal (main) do site
-# O 'fields' permite que o usuário digite o Username e Password
-# Chama login SEMPRE — ele lê o cookie automaticamente se existir
+# FIX 2: Chama login SEMPRE (para ler o cookie)
 authenticator.login(location='main')
+
+# FIX 3: Race condition — dá 1 rerun para o JS do CookieManager terminar
+if st.session_state.get("authentication_status") is None:
+    if "cookie_checked" not in st.session_state:
+        st.session_state["cookie_checked"] = True
+        st.rerun()
 
 authentication_status = st.session_state.get("authentication_status")
 name                  = st.session_state.get("name")
@@ -57,6 +58,7 @@ if authentication_status is False:
 elif not authentication_status:
     st.warning("Please enter your username and password")
     st.stop()
+
 
 
 
