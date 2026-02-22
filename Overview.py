@@ -385,8 +385,12 @@ with st.sidebar:
                 is_h2h_mode = st.toggle(
                     "⚔️ H2H Mode (Only Direct Matches)",
                     value=False,
+                    key="h2h_toggle_active",  # <--- ADICIONAMOS ESSA KEY IMPORTANTE
                     help="If active, shows ONLY metrics from games where these two teams played against each other."
                 )
+            else:
+                # Garante que se mudar os times, o toggle reseta ou desliga
+                is_h2h_mode = False
         # ---------------------------
 
         if i == 0:
@@ -1223,6 +1227,30 @@ else:
         sel_opp = ev_h2h.selection.rows
         if sel_opp:
             opp_name = df_h2h.iloc[sel_opp[0]]["opponent"]
+            
+            # --- NOVO: BOTÃO DE AÇÃO RÁPIDA ---
+            # Cria uma área de destaque para aplicar o filtro
+            st.info(f"Selecionado: **{opp_name}**")
+            
+            # Verifica se já não estamos filtrando exatamente isso para não mostrar o botão à toa
+            current_teams = st.session_state.get("f_team", [])
+            already_active = (
+                len(current_teams) == 2 and 
+                opp_name in current_teams and 
+                h2h_team in current_teams and 
+                st.session_state.get("h2h_toggle_active", False)
+            )
+
+            if not already_active:
+                if st.button(f"🌪️ Filtrar Dashboard: {h2h_team} vs {opp_name}", use_container_width=True, type="primary"):
+                    # Aqui acontece a mágica:
+                    # 1. Define os times no filtro principal
+                    st.session_state["f_team"] = [h2h_team, opp_name]
+                    # 2. Liga a chave do H2H Mode
+                    st.session_state["h2h_toggle_active"] = True
+                    # 3. Recarrega a página
+                    st.rerun()
+            # ----------------------------------
 
             params_matchup = json.dumps(base_params + [
                 {"name": "h2h_team", "bq_type": "STRING", "value": h2h_team},
