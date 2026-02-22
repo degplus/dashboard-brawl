@@ -96,10 +96,6 @@ elif not authentication_status:
 with st.sidebar:
     st.write(f"Logged as: **{name}**")
     
-    # --- LINHA DE DEBUG (Vamos apagar depois) ---
-    st.code(f"User atual: '{username}'") 
-    # ------------------------------------------
-
     # Verifica se é o Admin
     if username == "degadmin":
         st.subheader("🛠️ Admin Panel")
