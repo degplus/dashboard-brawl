@@ -21,7 +21,10 @@ def set_gradient_background():
     page_bg_img = """
     <style>
     .stApp {
-        background-image: linear-gradient(to bottom right, #0e1117, #1c1f33, #2a2d4a);
+        /* "to bottom" faz descer reto (vertical) */
+        /* Cores: Começa bem escuro (#0e1117) e vai clareando para um azul noturno (#2a2d4a) */
+        background-image: linear-gradient(to bottom, #0e1117, #1c1f33, #2a2d4a);
+        background-attachment: fixed;
     }
     </style>
     """
