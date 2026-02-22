@@ -59,16 +59,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 🔐 SISTEMA DE LOGIN (O PORTEIRO) - VERSÃO CORRIGIDA PARA F5
+# 🔐 AUTHENTICATION SYSTEM (THE GATEKEEPER)
 # ============================================================
 def to_plain_dict(obj):
     if hasattr(obj, 'items'):
         return {k: to_plain_dict(v) for k, v in obj.items()}
     return obj
 
+# Load credentials from secrets.toml
 credentials = to_plain_dict(st.secrets["credentials"])
 cookie_cfg  = to_plain_dict(st.secrets["cookie"])
 
+# Initialize Authenticate object
 authenticator = stauth.Authenticate(
     credentials,
     cookie_cfg["name"],
@@ -76,10 +78,15 @@ authenticator = stauth.Authenticate(
     cookie_cfg["expiry_days"]
 )
 
-# MUDANÇA AQUI: Capturamos o retorno direto da função login
-name, authentication_status, username = authenticator.login(location='main')
+# ⚠️ NEW SYNTAX: login now handles state internally
+# We just need to call it. It will render the form and manage cookies.
+authenticator.login(location='main')
 
-# Se o login falhar ou não existir
+# Retrieve status from session_state (Standard for new versions)
+authentication_status = st.session_state.get("authentication_status")
+username              = st.session_state.get("username")
+name                  = st.session_state.get("name")
+
 if authentication_status is False:
     st.error("Username/password is incorrect")
     st.stop()
@@ -87,7 +94,7 @@ elif authentication_status is None:
     st.warning("Please enter your username and password")
     st.stop()
 
-# Se chegou aqui, authentication_status é True! 🎉
+# If execution reaches here, authentication_status is True! 🎉
 
 
 # ============================================================
