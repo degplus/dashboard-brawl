@@ -106,6 +106,34 @@ st.logo("assets/logo.png", icon_image="assets/logo.png")
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+# ============================================================
+# HIDE STREAMLIT STYLE
+# ============================================================
+def hide_streamlit_style():
+    """
+    Remove todos os elementos padrões do Streamlit (Menu, Footer, Header, Deploy button).
+    Deixa o app com cara de site nativo.
+    """
+    hide_css = """
+        <style>
+        /* Esconde o menu hambúrguer (3 riscos no canto superior direito) */
+        #MainMenu {visibility: hidden;}
+        
+        /* Esconde o rodapé 'Made with Streamlit' */
+        footer {visibility: hidden;}
+        
+        /* Esconde o cabeçalho superior (onde fica a barra de loading e o botão Deploy) */
+        header {visibility: hidden;}
+        
+        /* Esconde a barra de ferramentas de opções (Github, Settings, etc) */
+        [data-testid="stToolbar"] {visibility: hidden;}
+        
+        /* Esconde especificamente o botão de Deploy caso ele insista em aparecer */
+        .stAppDeployButton {display:none;}
+        </style>
+    """
+    st.markdown(hide_css, unsafe_allow_html=True)
+
 
 # ============================================================
 # BIGQUERY CLIENT
