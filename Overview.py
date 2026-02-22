@@ -61,12 +61,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-    st.cache_data.clear()
-    st.rerun()
-
-    st.divider()
-    authenticator.logout('Logout', 'sidebar')
+  
 
 def set_gradient_background():
     page_bg_img = """
@@ -88,7 +83,10 @@ st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-
+if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+    st.cache_data.clear()
+    st.rerun()
+    st.divider()
 
 # ============================================================
 # BIGQUERY CLIENT
