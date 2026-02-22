@@ -12,7 +12,7 @@ import requests
 import base64
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import streamlit.components.v1 as components
+
 
 
 # ============================================================
@@ -59,10 +59,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 🔐 SISTEMA DE LOGIN (O PORTEIRO)
+# 🔐 SISTEMA DE LOGIN (O PORTEIRO) - VERSÃO CORRIGIDA PARA F5
 # ============================================================
-# Pegamos as credenciais que você salvou no secrets.toml
-# Converte st.secrets (imutável) para dict Python normal
 def to_plain_dict(obj):
     if hasattr(obj, 'items'):
         return {k: to_plain_dict(v) for k, v in obj.items()}
@@ -71,7 +69,6 @@ def to_plain_dict(obj):
 credentials = to_plain_dict(st.secrets["credentials"])
 cookie_cfg  = to_plain_dict(st.secrets["cookie"])
 
-
 authenticator = stauth.Authenticate(
     credentials,
     cookie_cfg["name"],
@@ -79,28 +76,19 @@ authenticator = stauth.Authenticate(
     cookie_cfg["expiry_days"]
 )
 
+# MUDANÇA AQUI: Capturamos o retorno direto da função login
+name, authentication_status, username = authenticator.login(location='main')
 
-# Renderiza a caixa de login no corpo principal (main) do site
-# O 'fields' permite que o usuário digite o Username e Password
-# Chama login SEMPRE — ele lê o cookie automaticamente se existir
-authenticator.login(location='main')
-
-authentication_status = st.session_state.get("authentication_status")
-name                  = st.session_state.get("name")
-username              = st.session_state.get("username")
-
+# Se o login falhar ou não existir
 if authentication_status is False:
     st.error("Username/password is incorrect")
     st.stop()
-elif not authentication_status:
+elif authentication_status is None:
     st.warning("Please enter your username and password")
     st.stop()
 
+# Se chegou aqui, authentication_status é True! 🎉
 
-
-# ============================================================
-# SE CHEGOU AQUI, O USUÁRIO ESTÁ LOGADO! 🎉
-# ============================================================
 
 # ============================================================
 # SIDEBAR - ÁREA LOGADA
@@ -506,52 +494,52 @@ with st.sidebar:
     st.success(f"⚡ Cache loaded at {loaded_at}")
     st.caption(f"🕐 Updated {ago_text}")
 
-# ============================================================
-# PDF GENERATE
-# ============================================================
+    # ========================================================
+    # EXCEL BUTTON
+    # ========================================================
+    import io
 
-    if st.sidebar.button("🖨️ Save to PDF", type="primary"):
-        # Import necessário dentro do bloco para evitar NameError
-        import streamlit.components.v1 as components
+    # ... inside your sidebar logic ...
+
+    st.divider()
+    st.subheader("📊 Data Export")
+    st.caption("Consolidate all filtered tables into a single Excel file.")
+
+    if st.button("🚀 Generate Full Report", use_container_width=True):
+        # Create an in-memory buffer
+        output = io.BytesIO()
         
-        # Definimos o script aqui para garantir que a variável exista
-        print_script = """
-            <script>
-                var style = document.createElement('style');
-                style.innerHTML = `
-                    @media print {
-                        /* Esconde a Sidebar e botões */
-                        section[data-testid="stSidebar"], .stButton, button, header {
-                            display: none !important;
-                        }
-                        
-                        /* Força o visual de relatório (Fundo Branco / Texto Preto) */
-                        .stApp, body {
-                            background-color: white !important;
-                            color: black !important;
-                        }
-                        
-                        /* Garante que todos os textos fiquem pretos e legíveis */
-                        p, h1, h2, h3, h4, span, div, td, th {
-                            color: black !important;
-                            -webkit-text-fill-color: black !important;
-                        }
-                        
-                        /* Remove filtros que possam esconder gráficos */
-                        canvas { filter: none !important; }
-                    }
-                `;
-                document.head.appendChild(style);
+        try:
+            # Create Excel writer using openpyxl engine
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                # List of dataframes to export (ensure these names match your filtered DFs)
+                export_list = [
+                    (df_maps, "Maps_Analysis"),
+                    (df_brawlers, "Brawlers_Stats"),
+                    (df_players, "Players_Overview"),
+                    (df_teams, "Teams_Data")
+                ]
                 
-                // Comando para imprimir a janela principal
-                window.parent.print();
-            </script>
-        """
-        
-        # Executa o componente
-        components.html(print_script, height=0, width=0) 
-
-
+                for df_to_export, sheet_name in export_list:
+                    if not df_to_export.empty:
+                        # Data Cleaning: Remove image/binary columns for Excel compatibility
+                        clean_cols = [c for c in df_to_export.columns if "img" not in c.lower() and "link" not in c.lower()]
+                        df_to_export[clean_cols].to_excel(writer, sheet_name=sheet_name, index=False)
+                
+            # Prepare file for download
+            data_xlsx = output.getvalue()
+            
+            st.download_button(
+                label="💾 Download Excel (.xlsx)",
+                data=data_xlsx,
+                file_name=f"DegStats_Report_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+            st.success("Report generated successfully!")
+            
+        except Exception as e:
+            st.error(f"Error generating report: {e}")
 # ============================================================
 # WHERE CLAUSE FINAL
 # ============================================================
