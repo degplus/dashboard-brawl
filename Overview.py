@@ -44,9 +44,8 @@ authenticator = stauth.Authenticate(
 
 # Renderiza a caixa de login no corpo principal (main) do site
 # O 'fields' permite que o usuário digite o Username e Password
-# Tenta restaurar sessão do cookie primeiro
-if not st.session_state.get("authentication_status"):
-    authenticator.login(location='main')
+# Chama login SEMPRE — ele lê o cookie automaticamente se existir
+authenticator.login(location='main')
 
 authentication_status = st.session_state.get("authentication_status")
 name                  = st.session_state.get("name")
@@ -58,6 +57,7 @@ if authentication_status is False:
 elif not authentication_status:
     st.warning("Please enter your username and password")
     st.stop()
+
 
 
 # ============================================================
@@ -185,19 +185,20 @@ def load_dim_filters() -> pd.DataFrame:
 @st.cache_data(ttl=3600, persist="disk")
 def load_player_names() -> dict:
     df = fetch_data("""
-        SELECT f.player_tag, f.player_name AS display_name
+        SELECT v.player_tag, v.player_name AS display_name
         FROM (
             SELECT player_tag, player_name,
                 ROW_NUMBER() OVER (
-                    PARTITION BY player_tag ORDER BY battle_date DESC
+                    PARTITION BY player_tag ORDER BY battle_time DESC
                 ) AS rn
-            FROM `brawl-sandbox.brawl_stats.dim_filters`
-        ) f
+            FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+        ) v
         INNER JOIN `brawl-sandbox.brawl_stats.dim_source_players` sp
-            ON f.player_tag = sp.PL_TAG AND sp.is_active = TRUE
-        WHERE f.rn = 1
+            ON v.player_tag = sp.PL_TAG AND sp.is_active = TRUE
+        WHERE v.rn = 1
     """)
     return dict(zip(df["player_tag"], df["display_name"]))
+
 
 # ============================================================
 # ALL PLAYER NAMES
@@ -206,11 +207,12 @@ def load_player_names() -> dict:
 def load_all_player_names() -> dict:
     df = fetch_data("""
         SELECT player_tag,
-            ARRAY_AGG(player_name ORDER BY battle_date DESC LIMIT 1)[OFFSET(0)] AS display_name
-        FROM `brawl-sandbox.brawl_stats.dim_filters`
+            ARRAY_AGG(player_name ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS display_name
+        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
         GROUP BY player_tag
     """)
     return dict(zip(df["player_tag"], df["display_name"]))
+
 
 # ============================================================
 # SESSION STATE

@@ -117,17 +117,18 @@ def fetch_api_profile(tag: str) -> dict | None:
 def load_all_players() -> pd.DataFrame:
     return fetch_data("""
         SELECT
-            f.player_tag,
-            ARRAY_AGG(f.player_name ORDER BY f.battle_date DESC LIMIT 1)[OFFSET(0)] AS display_name,
-            ARRAY_AGG(f.player_team ORDER BY f.battle_date DESC LIMIT 1)[OFFSET(0)] AS last_team,
-            MAX(f.battle_date) AS last_seen,
+            player_tag,
+            ARRAY_AGG(player_name ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS display_name,
+            ARRAY_AGG(player_team ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS last_team,
+            MAX(DATE(battle_time)) AS last_seen,
             COALESCE(MAX(CASE WHEN sp.is_active = TRUE THEN 1 ELSE 0 END), 0) = 1 AS is_active
-        FROM `brawl-sandbox.brawl_stats.dim_filters` f
+        FROM `brawl-sandbox.brawl_stats.vw_battles_python` v
         LEFT JOIN `brawl-sandbox.brawl_stats.dim_source_players` sp
-            ON f.player_tag = sp.PL_TAG AND sp.is_active = TRUE
-        GROUP BY f.player_tag
+            ON v.player_tag = sp.PL_TAG AND sp.is_active = TRUE
+        GROUP BY player_tag
         ORDER BY last_seen DESC
     """)
+
 
 # ============================================================
 # PLAYER DATE RANGE
