@@ -101,7 +101,7 @@ with st.sidebar:
     # ------------------------------------------
 
     # Verifica se é o Admin
-    if username.lower() == "DegAdmin":
+    if username == "degadmin":
         st.subheader("🛠️ Admin Panel")
         if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
             st.cache_data.clear()
