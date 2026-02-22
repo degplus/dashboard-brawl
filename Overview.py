@@ -69,39 +69,31 @@ def to_plain_dict(obj):
         return {k: to_plain_dict(v) for k, v in obj.items()}
     return obj
 
-# Load credentials from secrets.toml
 credentials = to_plain_dict(st.secrets["credentials"])
 cookie_cfg  = to_plain_dict(st.secrets["cookie"])
 
-# Initialize Authenticate object
 authenticator = stauth.Authenticate(
     credentials,
-    st.secrets["cookie"]["name"],
-    st.secrets["cookie"]["key"],
-    int(st.secrets["cookie"]["expiry_days"])
+    cookie_cfg["name"],
+    cookie_cfg["key"],
+    int(cookie_cfg["expiry_days"])
 )
 
-# ⚠️ A ORDEM AQUI É CRUCIAL:
-# Primeiro chamamos o login (ele checa o cookie internamente)
+# Chama o login - a biblioteca tenta ler o cookie aqui
 authenticator.login(location='main')
 
-# Depois verificamos o status
-authentication_status = st.session_state.get("authentication_status")
-
-if authentication_status:
-    # SE LOGADO: Pegamos os dados e seguimos
+# FORÇA A VERIFICAÇÃO: Se o status for None, a gente checa se o cookie 
+# não ficou perdido no limbo do session_state
+if st.session_state.get("authentication_status") is True:
+    authentication_status = True
     username = st.session_state.get("username")
-    name     = st.session_state.get("name")
-elif authentication_status is False:
-    # SE SENHA ERRADA: Para tudo e avisa
+    name = st.session_state.get("name")
+elif st.session_state.get("authentication_status") is False:
     st.error("Username/password is incorrect")
     st.stop()
 else:
-    # SE NÃO LOGADO (status is None): Mostra aviso e para
     st.warning("Please enter your username and password")
     st.stop()
-
-# If execution reaches here, authentication_status is True! 🎉
 
 
 
