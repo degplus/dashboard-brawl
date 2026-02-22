@@ -24,6 +24,9 @@ st.set_page_config(
     layout="wide"
 )
 
+if 'authentication_status' not in st.session_state:
+    st.session_state['authentication_status'] = None
+
 # ============================================================
 # 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
 # ============================================================
@@ -73,9 +76,9 @@ cookie_cfg  = to_plain_dict(st.secrets["cookie"])
 # Initialize Authenticate object
 authenticator = stauth.Authenticate(
     credentials,
-    cookie_cfg["name"],
-    cookie_cfg["key"],
-    cookie_cfg["expiry_days"]
+    st.secrets["cookie"]["name"],
+    st.secrets["cookie"]["key"],
+    int(st.secrets["cookie"]["expiry_days"]) # Força a ser número inteiro
 )
 
 # ⚠️ NEW SYNTAX: login now handles state internally
@@ -95,6 +98,7 @@ elif authentication_status is None:
     st.stop()
 
 # If execution reaches here, authentication_status is True! 🎉
+
 
 
 # ============================================================
@@ -515,36 +519,29 @@ with st.sidebar:
     if st.button("🚀 Generate Full Report", use_container_width=True):
         # Create an in-memory buffer
         output = io.BytesIO()
-        
-        try:
-            # Create Excel writer using openpyxl engine
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                # List of dataframes to export (ensure these names match your filtered DFs)
-                export_list = [
-                    (df_maps, "Maps_Analysis"),
-                    (df_brawlers, "Brawlers_Stats"),
-                    (df_players, "Players_Overview"),
-                    (df_teams, "Teams_Data")
-                ]
                 
-                for df_to_export, sheet_name in export_list:
-                    if not df_to_export.empty:
-                        # Data Cleaning: Remove image/binary columns for Excel compatibility
+        try:
+            # Check if there is ANY data to export first
+            valid_exports = [(df, name) for df, name in export_list if not df.empty]
+            
+            if not valid_exports:
+                st.warning("No data available to export with current filters.")
+            else:
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    for df_to_export, sheet_name in valid_exports:
+                        # Data Cleaning: Remove image/binary columns
                         clean_cols = [c for c in df_to_export.columns if "img" not in c.lower() and "link" not in c.lower()]
                         df_to_export[clean_cols].to_excel(writer, sheet_name=sheet_name, index=False)
                 
-            # Prepare file for download
-            data_xlsx = output.getvalue()
-            
-            st.download_button(
-                label="💾 Download Excel (.xlsx)",
-                data=data_xlsx,
-                file_name=f"DegStats_Report_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-            st.success("Report generated successfully!")
-            
+                data_xlsx = output.getvalue()
+                st.download_button(
+                    label="💾 Download Excel (.xlsx)",
+                    data=data_xlsx,
+                    file_name=f"DegStats_Report_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+                st.success("Report ready!")
         except Exception as e:
             st.error(f"Error generating report: {e}")
 # ============================================================
