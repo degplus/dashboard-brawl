@@ -96,19 +96,18 @@ elif not authentication_status:
 with st.sidebar:
     st.write(f"Logged as: **{name}**")
     
-    # --- BLOCO EXCLUSIVO DO ADMIN ---
+    # --- ÁREA DO ADMIN ---
+    # Verifica pelo 'username' que está no secrets (DegAdmin)
     if username == "DegAdmin":
         st.subheader("🛠️ Admin Panel")
-        st.caption("Use these tools to manage the dashboard data.")
-
-        if st.button("🔄 Force Data Update", use_container_width=True, type="primary"):
+        
+        # Botão simples: Apenas limpa o cache e recarrega
+        if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
             st.cache_data.clear()
             st.rerun()
 
-        
-    else:
-        st.divider()
-    # O botão de Logout fica visível para todos
+    # --- ÁREA COMUM (Para todos) ---
+    st.divider() # Linha horizontal para separar o logout
     authenticator.logout('Logout', 'sidebar')
 
 def set_gradient_background():
