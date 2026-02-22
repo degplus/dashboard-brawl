@@ -24,36 +24,34 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🚫 LIMPEZA TOTAL DA INTERFACE (CSS)
+# 🚫 LIMPEZA TOTAL (AGORA INCLUINDO O RODAPÉ DO CLOUD)
 # ============================================================
-# Isso remove o botão Deploy, os 3 pontinhos, o rodapé e o cabeçalho
 st.markdown("""
     <style>
-        /* Esconde o cabeçalho superior (onde fica a barra de loading e o botão Deploy) */
-        header[data-testid="stHeader"] {
-            visibility: hidden;
-            height: 0%;
+        /* 1. Esconde o cabeçalho padrão (Hamburger menu, Deploy, etc) */
+        header {visibility: hidden;}
+        [data-testid="stHeader"] {visibility: hidden;}
+        
+        /* 2. Esconde o rodapé padrão 'Made with Streamlit' */
+        footer {visibility: hidden;}
+        
+        /* 3. Esconde a barra de ferramentas (Settings, Star, Fork) */
+        [data-testid="stToolbar"] {visibility: hidden; height: 0%;}
+        
+        /* 4. ESPECÍFICO PARA O BADGE VERMELHO E LINK DE PERFIL */
+        /* Tenta esconder pelo container do viewer badge */
+        div[class*="viewerBadge"] {
+            display: none !important;
         }
         
-        /* Esconde a barra de ferramentas de opções (Github, Settings, 3 pontinhos) */
-        [data-testid="stToolbar"] {
-            visibility: hidden;
-            height: 0%;
+        /* Tenta esconder qualquer link no rodapé que aponte para o Streamlit */
+        .stApp > footer {
+            display: none !important;
         }
         
-        /* Esconde o rodapé 'Made with Streamlit' */
-        footer {
-            visibility: hidden;
-        }
-        
-        /* Esconde especificamente o botão de Deploy caso ele insista em aparecer */
+        /* Esconde botão de Deploy flutuante se sobrar */
         .stAppDeployButton {
-            display: none;
-        }
-        
-        /* Esconde o menu hambúrguer antigo se ainda existir */
-        #MainMenu {
-            visibility: hidden;
+            display: none !important;
         }
     </style>
 """, unsafe_allow_html=True)
