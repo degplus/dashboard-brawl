@@ -24,39 +24,25 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🚫 LIMPEZA TOTAL (NUCLEAR OPTION)
+# 🚫 CSS NUCLEAR: ESCONDE RODAPÉ, HEADER E MENU
 # ============================================================
 st.markdown("""
     <style>
-        /* 1. Esconde o menu de hambúrguer e cabeçalho */
-        header, [data-testid="stHeader"] {
-            display: none !important;
-        }
+        /* Esconde o cabeçalho padrão */
+        header {visibility: hidden;}
         
-        /* 2. Esconde a barra de ferramentas (Github, Settings, etc) */
-        [data-testid="stToolbar"] {
-            display: none !important;
-        }
+        /* Esconde a barra de ferramentas (3 pontinhos, GitHub, etc) */
+        [data-testid="stToolbar"] {visibility: hidden; height: 0%;}
         
-        /* 3. ALVO PRINCIPAL: O Rodapé e o Badge Vermelho */
-        footer {
-            display: none !important;
-        }
+        /* Esconde o rodapé padrão */
+        footer {visibility: hidden;}
         
-        /* Tenta esconder o container específico do badge do Cloud */
-        .stApp > footer {
-            display: none !important;
-        }
+        /* Tenta esconder o badge 'Hospedado com Streamlit' (vermelho) */
+        .stApp > footer {display: none !important;}
+        div[class*="viewerBadge"] {display: none !important;}
         
-        /* Esconde elementos que tenham 'viewerBadge' no nome da classe */
-        div[class*="viewerBadge"] {
-            display: none !important;
-        }
-
-        /* 4. Remove espaço em branco extra no topo */
-        .block-container {
-            padding-top: 1rem !important;
-        }
+        /* Esconde botão de Deploy */
+        .stAppDeployButton {display: none !important;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -112,7 +98,6 @@ with st.sidebar:
     
     # --- BLOCO EXCLUSIVO DO ADMIN ---
     if username == "DegAdmin":
-        st.divider()
         st.subheader("🛠️ Admin Panel")
         st.caption("Use these tools to manage the dashboard data.")
 
