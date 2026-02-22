@@ -12,6 +12,7 @@ import requests
 import base64
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from streamlit.components.v1 import html
 
 
 # ============================================================
@@ -505,11 +506,13 @@ with st.sidebar:
     st.success(f"⚡ Cache loaded at {loaded_at}")
     st.caption(f"🕐 Updated {ago_text}")
 
-    if username == "admin_deg":
-        if st.button("🔄 Refresh Data", use_container_width=True):
-            st.cache_data.clear()
-            st.rerun()
-
+# ============================================================
+# PDF GENERATE
+# ============================================================
+if st.button("🖨️ Salvar Relatório em PDF", type="primary"):
+    # Esse javascript aciona o comando de imprimir do navegador (Ctrl+P)
+    js = "window.print();"
+    html(f"<script>{js}</script>")    
 
 # ============================================================
 # WHERE CLAUSE FINAL
