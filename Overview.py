@@ -93,21 +93,21 @@ elif not authentication_status:
 # ============================================================
 # SIDEBAR - ÁREA LOGADA
 # ============================================================
-with st.sidebar:
+wwith st.sidebar:
     st.write(f"Logged as: **{name}**")
     
-    # --- ÁREA DO ADMIN ---
-    # Verifica pelo 'username' que está no secrets (DegAdmin)
+    # --- LINHA DE DEBUG (Vamos apagar depois) ---
+    st.code(f"User atual: '{username}'") 
+    # ------------------------------------------
+
+    # Verifica se é o Admin
     if username == "DegAdmin":
         st.subheader("🛠️ Admin Panel")
-        
-        # Botão simples: Apenas limpa o cache e recarrega
         if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
             st.cache_data.clear()
             st.rerun()
 
-    # --- ÁREA COMUM (Para todos) ---
-    st.divider() # Linha horizontal para separar o logout
+    st.divider()
     authenticator.logout('Logout', 'sidebar')
 
 def set_gradient_background():
