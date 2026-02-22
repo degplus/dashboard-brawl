@@ -14,11 +14,49 @@ from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 st.set_page_config(
     page_title="DegStats - Overview",
     page_icon="📊",
     layout="wide"
 )
+
+# ============================================================
+# 🚫 LIMPEZA TOTAL DA INTERFACE (CSS)
+# ============================================================
+# Isso remove o botão Deploy, os 3 pontinhos, o rodapé e o cabeçalho
+st.markdown("""
+    <style>
+        /* Esconde o cabeçalho superior (onde fica a barra de loading e o botão Deploy) */
+        header[data-testid="stHeader"] {
+            visibility: hidden;
+            height: 0%;
+        }
+        
+        /* Esconde a barra de ferramentas de opções (Github, Settings, 3 pontinhos) */
+        [data-testid="stToolbar"] {
+            visibility: hidden;
+            height: 0%;
+        }
+        
+        /* Esconde o rodapé 'Made with Streamlit' */
+        footer {
+            visibility: hidden;
+        }
+        
+        /* Esconde especificamente o botão de Deploy caso ele insista em aparecer */
+        .stAppDeployButton {
+            display: none;
+        }
+        
+        /* Esconde o menu hambúrguer antigo se ainda existir */
+        #MainMenu {
+            visibility: hidden;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # 🔐 SISTEMA DE LOGIN (O PORTEIRO)
