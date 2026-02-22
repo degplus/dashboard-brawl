@@ -24,9 +24,6 @@ st.set_page_config(
     layout="wide"
 )
 
-if 'authentication_status' not in st.session_state:
-    st.session_state['authentication_status'] = None
-
 # ============================================================
 # 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
 # ============================================================
@@ -81,12 +78,12 @@ set_gradient_background()
 # Adiciona a logo no topo da sidebar
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
     st.cache_data.clear()
     st.rerun()
     st.divider()
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============================================================
 # BIGQUERY CLIENT
