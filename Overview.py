@@ -509,10 +509,47 @@ with st.sidebar:
 # ============================================================
 # PDF GENERATE
 # ============================================================
-    if st.button("🖨️ Salvar Relatório em PDF", type="primary"):
-        # Esse javascript aciona o comando de imprimir do navegador (Ctrl+P)
-        js = "window.print();"
-        html(f"<script>{js}</script>")    
+    if st.button("🖨️ Save to PDF", type="primary"):
+        print_code = """
+        <script>
+            // Cria um estilo temporário para a impressão
+            var style = document.createElement('style');
+            style.innerHTML = `
+                @media print {
+                    /* Esconde a Sidebar na impressão para ganhar espaço */
+                    section[data-testid="stSidebar"] {
+                        display: none !important;
+                    }
+                    
+                    /* Esconde os botões da tela (inclusive este de imprimir) */
+                    .stButton, button {
+                        display: none !important;
+                    }
+                    
+                    /* Força o fundo branco e texto preto (economia de tinta e legibilidade) */
+                    .stApp, body {
+                        background-color: white !important;
+                        color: black !important;
+                    }
+                    
+                    /* Ajusta as cores dos textos dentro das métricas e tabelas */
+                    p, h1, h2, h3, h4, span, div {
+                        color: black !important;
+                    }
+                    
+                    /* Garante que os gráficos apareçam */
+                    canvas {
+                        filter: invert(0) !important;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // O PULO DO GATO: Imprime a janela "Pai" (o site principal)
+            window.parent.print();
+        </script>
+    """
+    html(print_code, height=0, width=0)   
 
 
 # ============================================================
