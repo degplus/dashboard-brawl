@@ -1228,11 +1228,15 @@ else:
         if sel_opp:
             opp_name = df_h2h.iloc[sel_opp[0]]["opponent"]
             
-            # --- NOVO: BOTÃO DE AÇÃO RÁPIDA ---
-            # Cria uma área de destaque para aplicar o filtro
+            # --- NOVO: FUNÇÃO CALLBACK ---
+            # Essa função roda ANTES da página recarregar, evitando o erro
+            def apply_h2h_filter():
+                st.session_state["f_team"] = [h2h_team, opp_name]
+                st.session_state["h2h_toggle_active"] = True
+            # -----------------------------
+
             st.info(f"Selecionado: **{opp_name}**")
             
-            # Verifica se já não estamos filtrando exatamente isso para não mostrar o botão à toa
             current_teams = st.session_state.get("f_team", [])
             already_active = (
                 len(current_teams) == 2 and 
@@ -1242,15 +1246,16 @@ else:
             )
 
             if not already_active:
-                if st.button(f"🌪️ Filtrar Dashboard: {h2h_team} vs {opp_name}", use_container_width=True, type="primary"):
-                    # Aqui acontece a mágica:
-                    # 1. Define os times no filtro principal
+                def apply_h2h_filter():
                     st.session_state["f_team"] = [h2h_team, opp_name]
-                    # 2. Liga a chave do H2H Mode
                     st.session_state["h2h_toggle_active"] = True
-                    # 3. Recarrega a página
-                    st.rerun()
-            # ----------------------------------
+
+                st.button(
+                    f"🌪️ Filter Dashboard: {h2h_team} vs {opp_name}", # <--- Traduzido aqui
+                    use_container_width=True,
+                    type="primary",
+                    on_click=apply_h2h_filter
+                )
 
             params_matchup = json.dumps(base_params + [
                 {"name": "h2h_team", "bq_type": "STRING", "value": h2h_team},
