@@ -93,7 +93,7 @@ elif not authentication_status:
 # ============================================================
 # SIDEBAR - ÁREA LOGADA
 # ============================================================
-wwith st.sidebar:
+with st.sidebar:
     st.write(f"Logged as: **{name}**")
     
     # --- LINHA DE DEBUG (Vamos apagar depois) ---
