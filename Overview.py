@@ -44,7 +44,11 @@ authenticator = stauth.Authenticate(
 
 # Renderiza a caixa de login no corpo principal (main) do site
 # O 'fields' permite que o usuário digite o Username e Password
-name, authentication_status, username = authenticator.login(location='main')
+authenticator.login(location='main')
+name               = st.session_state.get("name")
+authentication_status = st.session_state.get("authentication_status")
+username           = st.session_state.get("username")
+
 
 if authentication_status is False:
     st.error('Username/password is incorrect')
