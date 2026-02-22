@@ -23,7 +23,11 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-
+if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+    st.cache_data.clear()
+    st.rerun()
+    st.divider()
+    
 # ============================================================
 # 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
 # ============================================================
@@ -78,12 +82,7 @@ set_gradient_background()
 # Adiciona a logo no topo da sidebar
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
-if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-    st.cache_data.clear()
-    st.rerun()
-    st.divider()
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import concurrent.futures
 
 # ============================================================
 # BIGQUERY CLIENT
@@ -141,9 +140,9 @@ def img_to_base64(url: str) -> str | None:
 def convert_img_column(series: pd.Series) -> pd.Series:
     urls = series.tolist()
     results = {}
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = {executor.submit(img_to_base64, url): i for i, url in enumerate(urls)}
-        for future in as_completed(futures):
+        for future in concurrent.futures.as_completed(futures):
             i = futures[future]
             results[i] = future.result()
     return pd.Series([results[i] for i in range(len(urls))])
