@@ -11,11 +11,12 @@ import json
 import requests
 import base64
 from PIL import Image
-import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 st.set_page_config(
     page_title="DegStats - Overview",
-    page_icon="assets/logo.png",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -54,27 +55,14 @@ with st.sidebar:
     st.write(f"Logged as: **{name}**")
     
     # --- BLOCO EXCLUSIVO DO ADMIN ---
-    if username == "DegAdmin":
+    if username == "admin_deg":
         st.divider()
         st.subheader("🛠️ Admin Panel")
         st.caption("Use these tools to manage the dashboard data.")
-        
-        if st.button("🔄 Force Data Update (Git)", use_container_width=True, type="primary"):
-            try:
-                # 1. Executa o seu script de atualização
-                # O './' indica que o arquivo está na mesma pasta
-                result = subprocess.run(["bash", "./gitupdate.sh"], capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    st.success("Data updated successfully!")
-                    # 2. Limpa o cache para o Streamlit ler os arquivos novos
-                    st.cache_data.clear()
-                    # 3. Recarrega o app para mostrar os dados novos
-                    st.rerun()
-                else:
-                    st.error(f"Error running script: {result.stderr}")
-            except Exception as e:
-                st.error(f"Critical failure: {e}")
+        if st.button("🔄 Force Data Update", use_container_width=True, type="primary"):
+            st.cache_data.clear()
+            st.rerun()
+
     else:
         # ISSO É O QUE APARECE PARA O USER
         st.divider()
@@ -106,14 +94,7 @@ st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# ============================================================
-# PAGE CONFIG
-# ============================================================
-st.set_page_config(
-    page_title="DegStats - Brawl Stars",
-    page_icon=Image.open("assets/logo.png"),
-    layout="wide"
-)
+
 
 # ============================================================
 # BIGQUERY CLIENT
