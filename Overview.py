@@ -24,28 +24,36 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🚫 LIMPEZA VISUAL TOTAL (Modo Fantasma)
+# 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
 # ============================================================
 st.markdown("""
     <style>
-        /* 1. Cabeçalho e Toolbar (GitHub, Settings, etc) */
+        /* 1. Esconde Cabeçalho, Menu Hamburger e Toolbar */
         header {visibility: hidden !important;}
         [data-testid="stHeader"] {display: none !important;}
         [data-testid="stToolbar"] {display: none !important;}
         
-        /* 2. Rodapé Padrão do Streamlit */
+        /* 2. Esconde Rodapé Padrão */
         footer {visibility: hidden !important; height: 0px !important;}
-        [data-testid="stFooter"] {display: none !important;}
         
-        /* 3. O Alvo Principal: Badge do Criador e 'Hosted with Streamlit' */
-        /* Esconde qualquer container que tenha a classe viewerBadge */
-        div[class*="viewerBadge"] {display: none !important;}
+        /* 3. Tenta esconder o Badge do Perfil (Bonequinho) */
+        /* Procura por qualquer DIV que tenha 'viewerBadge' no nome da classe */
+        div[class*="viewerBadge"] {
+            visibility: hidden !important;
+            display: none !important;
+            opacity: 0 !important;
+        }
+
+        /* 4. Tenta esconder o botão 'Hosted with Streamlit' vermelho */
+        .stApp > footer {
+            display: none !important;
+        }
         
-        /* Esconde qualquer link que aponte para o GitHub no rodapé */
-        footer a[href*="github.com"] {display: none !important;}
-        
-        /* Remove o espaço em branco extra no rodapé */
-        .stApp {margin-bottom: -100px !important;}
+        /* 5. Ajuste de margem para o conteúdo subir e cobrir o vazio */
+        .block-container {
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
