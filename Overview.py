@@ -77,13 +77,7 @@ with st.sidebar:
             st.rerun()
 
     else:
-        # ISSO É O QUE APARECE PARA O USER
         st.divider()
-        st.info("📊 Data is updated daily at 00:00 UTC.")
-        st.caption("Contact the admin for custom reports.")
-    # --------------------------------
-    
-    st.divider()
     # O botão de Logout fica visível para todos
     authenticator.logout('Logout', 'sidebar')
 
@@ -473,9 +467,11 @@ with st.sidebar:
     st.success(f"⚡ Cache loaded at {loaded_at}")
     st.caption(f"🕐 Updated {ago_text}")
 
-    if st.button("🔄 Refresh Data", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
+    if username == "admin_deg":
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+
 
 # ============================================================
 # WHERE CLAUSE FINAL
