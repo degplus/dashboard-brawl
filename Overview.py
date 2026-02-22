@@ -12,7 +12,7 @@ import requests
 import base64
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from streamlit.components.v1 import html
+import streamlit.components.v1 as components
 
 
 # ============================================================
@@ -549,7 +549,7 @@ with st.sidebar:
             window.parent.print();
         </script>
     """
-    html(print_code, height=0, width=0)   
+    components.html(print_code, height=0, width=0)   
 
 
 # ============================================================
