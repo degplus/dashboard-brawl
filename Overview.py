@@ -71,7 +71,7 @@ with st.sidebar:
     if username == "DegAdmin":
         st.divider()
         st.subheader("🛠️ Admin Panel")
-        st.caption("a")
+        st.caption("Use these tools to manage the dashboard data.")
         
     else:
         st.divider()
