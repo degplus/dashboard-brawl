@@ -509,10 +509,11 @@ with st.sidebar:
 # ============================================================
 # PDF GENERATE
 # ============================================================
-if st.button("🖨️ Salvar Relatório em PDF", type="primary"):
-    # Esse javascript aciona o comando de imprimir do navegador (Ctrl+P)
-    js = "window.print();"
-    html(f"<script>{js}</script>")    
+    if st.button("🖨️ Salvar Relatório em PDF", type="primary"):
+        # Esse javascript aciona o comando de imprimir do navegador (Ctrl+P)
+        js = "window.print();"
+        html(f"<script>{js}</script>")    
+
 
 # ============================================================
 # WHERE CLAUSE FINAL
