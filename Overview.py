@@ -24,14 +24,23 @@ st.set_page_config(
 # 🔐 SISTEMA DE LOGIN (O PORTEIRO)
 # ============================================================
 # Pegamos as credenciais que você salvou no secrets.toml
-config = st.secrets
+# Converte st.secrets (imutável) para dict Python normal
+def to_plain_dict(obj):
+    if hasattr(obj, 'items'):
+        return {k: to_plain_dict(v) for k, v in obj.items()}
+    return obj
+
+credentials = to_plain_dict(st.secrets["credentials"])
+cookie_cfg  = to_plain_dict(st.secrets["cookie"])
+
 
 authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days']
+    credentials,
+    cookie_cfg["name"],
+    cookie_cfg["key"],
+    cookie_cfg["expiry_days"]
 )
+
 
 # Renderiza a caixa de login no corpo principal (main) do site
 # O 'fields' permite que o usuário digite o Username e Password
