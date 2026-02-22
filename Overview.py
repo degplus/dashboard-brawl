@@ -267,10 +267,11 @@ with st.sidebar:
 
     st.markdown("---")
 
-    st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-    st.cache_data.clear()
-    st.rerun()
-    st.divider()
+    if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+        st.cache_data.clear()
+        st.rerun()
+        st.divider()
+    
     
 
 # ============================================================
