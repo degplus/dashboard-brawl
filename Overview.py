@@ -78,22 +78,26 @@ authenticator = stauth.Authenticate(
     credentials,
     st.secrets["cookie"]["name"],
     st.secrets["cookie"]["key"],
-    int(st.secrets["cookie"]["expiry_days"]) # Força a ser número inteiro
+    int(st.secrets["cookie"]["expiry_days"])
 )
 
-# ⚠️ NEW SYNTAX: login now handles state internally
-# We just need to call it. It will render the form and manage cookies.
+# ⚠️ A ORDEM AQUI É CRUCIAL:
+# Primeiro chamamos o login (ele checa o cookie internamente)
 authenticator.login(location='main')
 
-# Retrieve status from session_state (Standard for new versions)
+# Depois verificamos o status
 authentication_status = st.session_state.get("authentication_status")
-username              = st.session_state.get("username")
-name                  = st.session_state.get("name")
 
-if authentication_status is False:
+if authentication_status:
+    # SE LOGADO: Pegamos os dados e seguimos
+    username = st.session_state.get("username")
+    name     = st.session_state.get("name")
+elif authentication_status is False:
+    # SE SENHA ERRADA: Para tudo e avisa
     st.error("Username/password is incorrect")
     st.stop()
-elif authentication_status is None:
+else:
+    # SE NÃO LOGADO (status is None): Mostra aviso e para
     st.warning("Please enter your username and password")
     st.stop()
 
@@ -505,45 +509,7 @@ with st.sidebar:
     st.success(f"⚡ Cache loaded at {loaded_at}")
     st.caption(f"🕐 Updated {ago_text}")
 
-    # ========================================================
-    # EXCEL BUTTON
-    # ========================================================
-    import io
-
-    # ... inside your sidebar logic ...
-
-    st.divider()
-    st.subheader("📊 Data Export")
-    st.caption("Consolidate all filtered tables into a single Excel file.")
-
-    if st.button("🚀 Generate Full Report", use_container_width=True):
-        # Create an in-memory buffer
-        output = io.BytesIO()
-                
-        try:
-            # Check if there is ANY data to export first
-            valid_exports = [(df, name) for df, name in export_list if not df.empty]
-            
-            if not valid_exports:
-                st.warning("No data available to export with current filters.")
-            else:
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    for df_to_export, sheet_name in valid_exports:
-                        # Data Cleaning: Remove image/binary columns
-                        clean_cols = [c for c in df_to_export.columns if "img" not in c.lower() and "link" not in c.lower()]
-                        df_to_export[clean_cols].to_excel(writer, sheet_name=sheet_name, index=False)
-                
-                data_xlsx = output.getvalue()
-                st.download_button(
-                    label="💾 Download Excel (.xlsx)",
-                    data=data_xlsx,
-                    file_name=f"DegStats_Report_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-                st.success("Report ready!")
-        except Exception as e:
-            st.error(f"Error generating report: {e}")
+   
 # ============================================================
 # WHERE CLAUSE FINAL
 # ============================================================
