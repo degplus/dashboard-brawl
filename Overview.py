@@ -23,11 +23,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-    st.cache_data.clear()
-    st.rerun()
-    st.divider()
-    
+
 # ============================================================
 # 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
 # ============================================================
@@ -270,6 +266,12 @@ with st.sidebar:
     )
 
     st.markdown("---")
+
+    if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+    st.cache_data.clear()
+    st.rerun()
+    st.divider()
+    
 
 # ============================================================
 # GET FILTER OPTIONS
