@@ -61,57 +61,57 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ============================================================
-# 🔐 AUTHENTICATION SYSTEM (THE GATEKEEPER)
-# ============================================================
-def to_plain_dict(obj):
-    if hasattr(obj, 'items'):
-        return {k: to_plain_dict(v) for k, v in obj.items()}
-    return obj
+# # ============================================================
+# # 🔐 AUTHENTICATION SYSTEM (THE GATEKEEPER)
+# # ============================================================
+# def to_plain_dict(obj):
+#     if hasattr(obj, 'items'):
+#         return {k: to_plain_dict(v) for k, v in obj.items()}
+#     return obj
 
-credentials = to_plain_dict(st.secrets["credentials"])
-cookie_cfg  = to_plain_dict(st.secrets["cookie"])
+# credentials = to_plain_dict(st.secrets["credentials"])
+# cookie_cfg  = to_plain_dict(st.secrets["cookie"])
 
-authenticator = stauth.Authenticate(
-    credentials,
-    cookie_cfg["name"],
-    cookie_cfg["key"],
-    int(cookie_cfg["expiry_days"])
-)
+# authenticator = stauth.Authenticate(
+#     credentials,
+#     cookie_cfg["name"],
+#     cookie_cfg["key"],
+#     int(cookie_cfg["expiry_days"])
+# )
 
-# Chama o login - a biblioteca tenta ler o cookie aqui
-authenticator.login(location='main')
+# # Chama o login - a biblioteca tenta ler o cookie aqui
+# authenticator.login(location='main')
 
-# FORÇA A VERIFICAÇÃO: Se o status for None, a gente checa se o cookie 
-# não ficou perdido no limbo do session_state
-if st.session_state.get("authentication_status") is True:
-    authentication_status = True
-    username = st.session_state.get("username")
-    name = st.session_state.get("name")
-elif st.session_state.get("authentication_status") is False:
-    st.error("Username/password is incorrect")
-    st.stop()
-else:
-    st.warning("Please enter your username and password")
-    st.stop()
+# # FORÇA A VERIFICAÇÃO: Se o status for None, a gente checa se o cookie 
+# # não ficou perdido no limbo do session_state
+# if st.session_state.get("authentication_status") is True:
+#     authentication_status = True
+#     username = st.session_state.get("username")
+#     name = st.session_state.get("name")
+# elif st.session_state.get("authentication_status") is False:
+#     st.error("Username/password is incorrect")
+#     st.stop()
+# else:
+#     st.warning("Please enter your username and password")
+#     st.stop()
 
 
 
-# ============================================================
-# SIDEBAR - ÁREA LOGADA
-# ============================================================
-with st.sidebar:
-    st.write(f"Logged as: **{name}**")
+# # ============================================================
+# # SIDEBAR - ÁREA LOGADA
+# # ============================================================
+# with st.sidebar:
+#     st.write(f"Logged as: **{name}**")
     
-    # Verifica se é o Admin
-    if username == "degadmin":
-        st.subheader("🛠️ Admin Panel")
-        if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-            st.cache_data.clear()
-            st.rerun()
+#     # Verifica se é o Admin
+#     if username == "degadmin":
+#         st.subheader("🛠️ Admin Panel")
+#         if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+#             st.cache_data.clear()
+#             st.rerun()
 
-    st.divider()
-    authenticator.logout('Logout', 'sidebar')
+#     st.divider()
+#     authenticator.logout('Logout', 'sidebar')
 
 def set_gradient_background():
     page_bg_img = """
