@@ -98,18 +98,18 @@ st.markdown("""
     # ============================================================
     # SIDEBAR - ÁREA LOGADA
     # ============================================================
-    with st.sidebar:
-        st.write(f"Logado como: **{name}**")
+    # with st.sidebar:
+    #     st.write(f"Logado como: **{name}**")
         
-        # Verifica se é o Admin
-        if username == "degadmin":
-            st.subheader("🛠️ Admin Panel")
-            if st.button("🔄 Forçar Atualização", use_container_width=True, type="primary"):
-                st.cache_data.clear()
-                st.rerun()
+    #     # Verifica se é o Admin
+    #     if username == "degadmin":
+    #         st.subheader("🛠️ Admin Panel")
+        #     if st.button("🔄 Forçar Atualização", use_container_width=True, type="primary"):
+        #         st.cache_data.clear()
+        #         st.rerun()
 
-        st.divider()
-        authenticator.logout('Sair', 'sidebar')
+        # st.divider()
+        # authenticator.logout('Sair', 'sidebar')
 
     def set_gradient_background():
         page_bg_img = """
