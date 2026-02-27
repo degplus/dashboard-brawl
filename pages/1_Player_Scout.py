@@ -33,10 +33,10 @@ def get_bq_client():
     )
     return bigquery.Client(credentials=credentials, project=project_id)
 
-client = get_bq_client()
-if not st.session_state.get("authentication_status"):
-    st.warning("🔒 Please login on the Overview page.")
-    st.stop()
+# client = get_bq_client()
+# if not st.session_state.get("authentication_status"):
+#     st.warning("🔒 Please login on the Overview page.")
+#     st.stop()
 
 with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)

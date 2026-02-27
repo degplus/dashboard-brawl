@@ -61,39 +61,39 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ============================================================
-# 🔐 AUTHENTICATION SYSTEM (THE GATEKEEPER)
-# ============================================================
-def to_plain_dict(obj):
-    if hasattr(obj, 'items'):
-        return {k: to_plain_dict(v) for k, v in obj.items()}
-    return obj
+# # ============================================================
+# # 🔐 AUTHENTICATION SYSTEM (THE GATEKEEPER)
+# # ============================================================
+# #def to_plain_dict(obj):
+#     if hasattr(obj, 'items'):
+#         return {k: to_plain_dict(v) for k, v in obj.items()}
+#     return obj
 
-credentials = to_plain_dict(st.secrets["credentials"])
-cookie_cfg  = to_plain_dict(st.secrets["cookie"])
+# credentials = to_plain_dict(st.secrets["credentials"])
+# cookie_cfg  = to_plain_dict(st.secrets["cookie"])
 
-authenticator = stauth.Authenticate(
-    credentials,
-    cookie_cfg["name"],
-    cookie_cfg["key"],
-    int(cookie_cfg["expiry_days"])
-)
+# authenticator = stauth.Authenticate(
+#     credentials,
+#     cookie_cfg["name"],
+#     cookie_cfg["key"],
+#     int(cookie_cfg["expiry_days"])
+# )
 
-# A chamada ao login deve ser feita antes de qualquer verificação de st.session_state
-# para permitir que a biblioteca tente restaurar a sessão via cookie.
-authenticator.login(location='main')
+# # A chamada ao login deve ser feita antes de qualquer verificação de st.session_state
+# # para permitir que a biblioteca tente restaurar a sessão via cookie.
+# authenticator.login(location='main')
 
-# A lógica de verificação de status deve ser mais robusta e não usar st.stop() imediatamente,
-# permitindo que o Streamlit renderize o widget de login ou a mensagem de erro.
-if st.session_state["authentication_status"] is False:
-    st.error("Usuário/senha incorretos")
-elif st.session_state["authentication_status"] is None:
-    st.warning("Por favor, insira seu usuário e senha")
+# # A lógica de verificação de status deve ser mais robusta e não usar st.stop() imediatamente,
+# # permitindo que o Streamlit renderize o widget de login ou a mensagem de erro.
+# if st.session_state["authentication_status"] is False:
+#     st.error("Usuário/senha incorretos")
+# elif st.session_state["authentication_status"] is None:
+#     st.warning("Por favor, insira seu usuário e senha")
 
-# Somente executa o restante do aplicativo se o usuário estiver autenticado
-if st.session_state["authentication_status"]:
-    username = st.session_state["username"]
-    name = st.session_state["name"]
+# # Somente executa o restante do aplicativo se o usuário estiver autenticado
+# if st.session_state["authentication_status"]:
+#     username = st.session_state["username"]
+#     name = st.session_state["name"]
 
     # ============================================================
     # SIDEBAR - ÁREA LOGADA

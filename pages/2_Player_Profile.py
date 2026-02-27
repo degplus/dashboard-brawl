@@ -14,9 +14,9 @@ st.set_page_config(
     page_icon="assets/logo.png",
     layout="wide"
 )
-if not st.session_state.get("authentication_status"):
-    st.warning("🔒 Please login on the Overview page.")
-    st.stop()
+# if not st.session_state.get("authentication_status"):
+#     st.warning("🔒 Please login on the Overview page.")
+#     st.stop()
 
 
 st.logo("assets/logo.png", icon_image="assets/logo.png")
