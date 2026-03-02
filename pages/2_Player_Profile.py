@@ -14,10 +14,10 @@ st.set_page_config(
     page_icon="assets/logo.png",
     layout="wide"
 )
+
 # if not st.session_state.get("authentication_status"):
 #     st.warning("🔒 Please login on the Overview page.")
 #     st.stop()
-
 
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
@@ -82,7 +82,7 @@ with col_input:
         help="Enter the player tag with or without #"
     )
 with col_btn:
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("", unsafe_allow_html=True)
     search = st.button("Search", use_container_width=True, type="primary")
 
 if not raw_tag and not search:
@@ -107,7 +107,7 @@ if not profile:
     st.stop()
 
 if "_error" in profile:
-    err    = profile["_error"]
+    err = profile["_error"]
     detail = profile.get("_detail", "")
     if err == "no_token":
         st.error("BRAWL_API_TOKEN not found in secrets.")
@@ -122,17 +122,17 @@ if "_error" in profile:
 # ============================================================
 # PLAYER CARD
 # ============================================================
-club     = profile.get("club") or {}
-icon_id  = (profile.get("icon") or {}).get("id")
+club = profile.get("club") or {}
+icon_id = (profile.get("icon") or {}).get("id")
 icon_url = f"https://cdn.brawlify.com/profile-icons/regular/{icon_id}.png" if icon_id else None
 
 name_color_raw = profile.get("nameColor", "0xffffffff")
-name_color     = "#" + name_color_raw.replace("0xff", "").replace("0x", "")
+name_color = "#" + name_color_raw.replace("0xff", "").replace("0x", "")
 
 is_champion = profile.get("isQualifiedFromChampionshipChallenge", False)
-tag_clean   = profile.get("tag", raw_tag)
-club_name   = club.get("name", "—") if club else "—"
-club_tag    = club.get("tag", "")   if club else ""
+tag_clean = profile.get("tag", raw_tag)
+club_name = club.get("name", "—") if club else "—"
+club_tag = club.get("tag", "") if club else ""
 
 card_img, card_info = st.columns([1, 7])
 with card_img:
@@ -142,24 +142,18 @@ with card_img:
             st.image(b64, width=80)
 with card_info:
     champion_badge = (
-        "&nbsp;<span style='background:#f0a500;color:#000;"
-        "padding:2px 8px;border-radius:10px;font-size:0.75rem'>"
-        "🏅 Championship Qualified</span>"
+        " "
+        "🏅 Championship Qualified"
         if is_champion else ""
     )
     st.markdown(
-        f"<span style='"
-        f"color:{name_color};"
-        f"font-size:1.6rem;"
-        f"font-weight:bold;"
-        f"text-shadow: 1px 1px 3px #000000, -1px -1px 3px #000000,"
-        f"             1px -1px 3px #000000, -1px 1px 3px #000000'>"
-        f"{profile.get('name', raw_tag)}</span>{champion_badge}",
+        f""
+        f"{profile.get('name', raw_tag)}{champion_badge}",
         unsafe_allow_html=True
     )
     st.caption(
-        f"**Tag:** `{tag_clean}`  |  "
-        f"**Club:** {club_name} `{club_tag}`  |  "
+        f"**Tag:** `{tag_clean}` | "
+        f"**Club:** {club_name} `{club_tag}` | "
         f"**Exp Level:** {profile.get('expLevel', '—')} "
         f"({profile.get('expPoints', 0):,} XP)"
     )
@@ -169,12 +163,14 @@ st.markdown("---")
 # ============================================================
 # KPIs
 # ============================================================
-k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("🏆 Trophies",         f"{profile.get('trophies', 0):,}")
+# [NOVO] totalPrestigeLevel adicionado como k6
+k1, k2, k3, k4, k5, k6 = st.columns(6)
+k1.metric("🏆 Trophies", f"{profile.get('trophies', 0):,}")
 k2.metric("📈 Highest Trophies", f"{profile.get('highestTrophies', 0):,}")
-k3.metric("🎮 3v3 Victories",    f"{profile.get('3vs3Victories', 0):,}")
-k4.metric("🥊 Solo Victories",   f"{profile.get('soloVictories', 0):,}")
-k5.metric("👥 Duo Victories",    f"{profile.get('duoVictories', 0):,}")
+k3.metric("🎮 3v3 Victories", f"{profile.get('3vs3Victories', 0):,}")
+k4.metric("🥊 Solo Victories", f"{profile.get('soloVictories', 0):,}")
+k5.metric("👥 Duo Victories", f"{profile.get('duoVictories', 0):,}")
+k6.metric("🎖️ Prestige Level", f"{profile.get('totalPrestigeLevel', 0):,}")
 
 st.markdown("---")
 
@@ -192,17 +188,22 @@ if brawlers_api:
         key="lu_search"
     )
 
+    # [NOVO] prestigeLevel, hyperCharges, buff_star_power, buff_hyper_charge adicionados
     df_brawlers = pd.DataFrame([
         {
-            "brawler_name":     b.get("name", ""),
-            "power":            b.get("power", 0),
-            "rank":             b.get("rank", 0),
-            "trophies":         b.get("trophies", 0),
-            "highest_trophies": b.get("highestTrophies", 0),
-            "max_win_streak":   b.get("maxWinStreak", 0),
-            "gadgets":          len(b.get("gadgets", [])),
-            "star_powers":      len(b.get("starPowers", [])),
-            "gears":            len(b.get("gears", [])),
+            "brawler_name":      b.get("name", ""),
+            "power":             b.get("power", 0),
+            "rank":              b.get("rank", 0),
+            "trophies":          b.get("trophies", 0),
+            "highest_trophies":  b.get("highestTrophies", 0),
+            "prestige_level":    b.get("prestigeLevel", 0),
+            "max_win_streak":    b.get("maxWinStreak", 0),
+            "gadgets":           len(b.get("gadgets", [])),
+            "star_powers":       len(b.get("starPowers", [])),
+            "hyper_charges":     len(b.get("hyperCharges", [])),
+            "gears":             len(b.get("gears", [])),
+            "buff_star_power":   "✅" if (b.get("buffies") or {}).get("starPower", False) else "—",
+            "buff_hyper_charge": "✅" if (b.get("buffies") or {}).get("hyperCharge", False) else "—",
         }
         for b in brawlers_api
     ]).sort_values("trophies", ascending=False).reset_index(drop=True)
@@ -220,44 +221,55 @@ if brawlers_api:
         df_brawlers,
         use_container_width=True,
         column_config={
-            "brawler_name":     st.column_config.TextColumn("Brawler"),
-            "power":            st.column_config.NumberColumn("Power",        format="%d"),
-            "rank":             st.column_config.NumberColumn("Rank",         format="%d"),
-            "trophies":         st.column_config.ProgressColumn(
-                                    "Trophies", format="%d",
-                                    min_value=0, max_value=max_trophies
-                                ),
-            "highest_trophies": st.column_config.NumberColumn("Highest 🏆",   format="%d"),
-            "max_win_streak":   st.column_config.NumberColumn("🔥 Win Streak", format="%d"),
-            "gadgets":          st.column_config.NumberColumn("Gadgets",      format="%d"),
-            "star_powers":      st.column_config.NumberColumn("Star Powers",  format="%d"),
-            "gears":            st.column_config.NumberColumn("Gears",        format="%d"),
+            "brawler_name":      st.column_config.TextColumn("Brawler"),
+            "power":             st.column_config.NumberColumn("Power", format="%d"),
+            "rank":              st.column_config.NumberColumn("Rank", format="%d"),
+            "trophies":          st.column_config.ProgressColumn(
+                                     "Trophies", format="%d",
+                                     min_value=0, max_value=max_trophies
+                                 ),
+            "highest_trophies":  st.column_config.NumberColumn("Highest 🏆", format="%d"),
+            "prestige_level":    st.column_config.NumberColumn("Prestige ⭐", format="%d"),   # [NOVO]
+            "max_win_streak":    st.column_config.NumberColumn("🔥 Win Streak", format="%d"),
+            "gadgets":           st.column_config.NumberColumn("Gadgets", format="%d"),
+            "star_powers":       st.column_config.NumberColumn("Star Powers", format="%d"),
+            "hyper_charges":     st.column_config.NumberColumn("⚡ Hyper", format="%d"),      # [NOVO]
+            "gears":             st.column_config.NumberColumn("Gears", format="%d"),
+            "buff_star_power":   st.column_config.TextColumn("SP Buff"),                      # [NOVO]
+            "buff_hyper_charge": st.column_config.TextColumn("HC Buff"),                      # [NOVO]
         },
         hide_index=True
     )
 
     st.markdown("---")
 
-    # ── Roster Summary ───────────────────────────────────────
+    # ── Roster Summary ────────────────────────────────────────
     st.subheader("📊 Roster Summary")
 
+    # [NOVO] hyper_charges, buff_star_power, buff_hyper_charge adicionados
     df_full = pd.DataFrame([
         {
-            "power":       b.get("power", 0),
-            "rank":        b.get("rank", 0),
-            "gadgets":     len(b.get("gadgets", [])),
-            "star_powers": len(b.get("starPowers", [])),
-            "gears":       len(b.get("gears", [])),
+            "power":             b.get("power", 0),
+            "rank":              b.get("rank", 0),
+            "gadgets":           len(b.get("gadgets", [])),
+            "star_powers":       len(b.get("starPowers", [])),
+            "gears":             len(b.get("gears", [])),
+            "hyper_charges":     len(b.get("hyperCharges", [])),
+            "buff_star_power":   (b.get("buffies") or {}).get("starPower", False),
+            "buff_hyper_charge": (b.get("buffies") or {}).get("hyperCharge", False),
         }
         for b in brawlers_api
     ])
 
-    s1, s2, s3, s4, s5 = st.columns(5)
-    s1.metric("⚡ Max Power (11)",     int((df_full["power"] == 11).sum()))
-    s2.metric("🏅 Rank 35+",           int((df_full["rank"] >= 35).sum()))
-    s3.metric("🔧 All Gadgets (2/2)",  int((df_full["gadgets"] == 2).sum()))
-    s4.metric("⭐ All Star Powers",    int((df_full["star_powers"] == 2).sum()))
-    s5.metric("⚙️ All Gears (2/2)",   int((df_full["gears"] == 2).sum()))
+    # [NOVO] 7 colunas: s6 = HyperCharge, s7 = SP Buffed
+    s1, s2, s3, s4, s5, s6, s7 = st.columns(7)
+    s1.metric("⚡ Max Power (11)",    int((df_full["power"] == 11).sum()))
+    s2.metric("🏅 Rank 35+",          int((df_full["rank"] >= 35).sum()))
+    s3.metric("🔧 All Gadgets (2/2)", int((df_full["gadgets"] == 2).sum()))
+    s4.metric("⭐ All Star Powers",   int((df_full["star_powers"] == 2).sum()))
+    s5.metric("⚙️ All Gears (2/2)",  int((df_full["gears"] == 2).sum()))
+    s6.metric("⚡ Has HyperCharge",   int((df_full["hyper_charges"] > 0).sum()))
+    s7.metric("🟢 SP Buffed",         int(df_full["buff_star_power"].sum()))
 
 else:
     st.info("No brawler data available for this player.")

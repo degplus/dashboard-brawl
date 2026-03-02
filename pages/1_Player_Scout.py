@@ -1,5 +1,4 @@
 # pages/1_Player_Scout.py
-
 import streamlit as st
 from google.oauth2 import service_account
 from google.cloud import bigquery
@@ -19,7 +18,6 @@ st.set_page_config(
     page_icon="assets/logo.png",
     layout="wide"
 )
-
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 # ============================================================
@@ -42,7 +40,6 @@ with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)
     st.markdown("---")
 
-
 # ============================================================
 # FETCH DATA — BigQuery
 # ============================================================
@@ -52,8 +49,7 @@ def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
     if params_json:
         for p in json.loads(params_json):
             param_cls = (
-                bigquery.ArrayQueryParameter
-                if isinstance(p["value"], list)
+                bigquery.ArrayQueryParameter if isinstance(p["value"], list)
                 else bigquery.ScalarQueryParameter
             )
             bq_params.append(param_cls(p["name"], p["bq_type"], p["value"]))
@@ -129,16 +125,13 @@ def load_all_players() -> pd.DataFrame:
         ORDER BY last_seen DESC
     """)
 
-
 # ============================================================
 # PLAYER DATE RANGE
 # ============================================================
 @st.cache_data(ttl=3600, persist="disk")
 def get_player_date_range(tag: str):
     df = fetch_data("""
-        SELECT
-            MIN(battle_date) AS min_date,
-            MAX(battle_date) AS max_date
+        SELECT MIN(battle_date) AS min_date, MAX(battle_date) AS max_date
         FROM `brawl-sandbox.brawl_stats.dim_filters`
         WHERE player_tag = @tag
     """, json.dumps([{"name": "tag", "bq_type": "STRING", "value": tag}]))
@@ -164,14 +157,13 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
 
     blue = df_draft[df_draft["team_num"] == 1].reset_index(drop=True)
     red  = df_draft[df_draft["team_num"] == 2].reset_index(drop=True)
-
     star_player    = df_draft["star_player_name"].iloc[0]
     blue_result    = blue["player_result"].iloc[0] if not blue.empty else ""
     red_result     = red["player_result"].iloc[0]  if not red.empty  else ""
     blue_team_name = blue["player_team"].iloc[0]   if not blue.empty else "Blue"
     red_team_name  = red["player_team"].iloc[0]    if not red.empty  else "Red"
-    blue_emoji     = "🏆" if blue_result == "victory" else "💀"
-    red_emoji      = "🏆" if red_result  == "victory" else "💀"
+    blue_emoji = "🏆" if blue_result == "victory" else "💀"
+    red_emoji  = "🏆" if red_result  == "victory" else "💀"
 
     col_blue, col_center, col_red = st.columns([4, 2, 4])
 
@@ -181,12 +173,10 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
             unsafe_allow_html=True
         )
         h1, h2, h3 = st.columns(3)
-        h1.markdown("**Team**")
-        h2.markdown("**Player**")
-        h3.markdown("**Pick**")
+        h1.markdown("**Team**"); h2.markdown("**Player**"); h3.markdown("**Pick**")
         for _, row in blue.iterrows():
             c1, c2, c3 = st.columns(3)
-            c1.write(row["player_team"] or "-")
+            c1.write(row["player_team"] or "—")
             c2.write(row["player_name"])
             if row["brawler_img"]:
                 c3.image(row["brawler_img"], width=48)
@@ -209,23 +199,21 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
             unsafe_allow_html=True
         )
         h1, h2, h3 = st.columns(3)
-        h1.markdown("**Pick**")
-        h2.markdown("**Player**")
-        h3.markdown("**Team**")
+        h1.markdown("**Pick**"); h2.markdown("**Player**"); h3.markdown("**Team**")
         for _, row in red.iterrows():
             c1, c2, c3 = st.columns(3)
             if row["brawler_img"]:
                 c1.image(row["brawler_img"], width=48)
             c1.caption(row["brawler_name"])
             c2.write(row["player_name"])
-            c3.write(row["player_team"] or "-")
+            c3.write(row["player_team"] or "—")
         st.markdown(
             f"<h4 style='text-align:center'>{red_emoji} {'VICTORY' if red_result == 'victory' else 'DEFEAT'}</h4>",
             unsafe_allow_html=True
         )
 
 # ============================================================
-# HEADER
+# MAIN — TITLE
 # ============================================================
 st.title("🔍 Player Scout")
 st.caption("Analyse any player independently — active roster or scouting target.")
@@ -246,57 +234,50 @@ name_to_tag = dict(zip(df_all_players["display_name"], df_all_players["player_ta
 tag_to_row  = df_all_players.set_index("player_tag")
 
 # ============================================================
-# CONTROLS: PLAYER + DATE
+# CONTROLS
 # ============================================================
 ctrl1, ctrl2 = st.columns([2, 2])
-
 with ctrl1:
     player_options = sorted(df_all_players["display_name"].tolist())
-    selected_name  = st.selectbox("👤 Select Player", options=player_options)
-
-selected_tag = name_to_tag.get(selected_name)
-if not selected_tag:
-    st.error("Player tag not found.")
-    st.stop()
-
-p_min_raw, p_max_raw = get_player_date_range(selected_tag)
-if p_min_raw is None:
-    st.warning("No data found for this player.")
-    st.stop()
-
-p_min = pd.to_datetime(p_min_raw).date()
-p_max = pd.to_datetime(p_max_raw).date()
+    selected_name  = st.selectbox("Select Player", options=player_options)
+    selected_tag   = name_to_tag.get(selected_name)
+    if not selected_tag:
+        st.error("Player tag not found.")
+        st.stop()
+    pmin_raw, pmax_raw = get_player_date_range(selected_tag)
+    if pmin_raw is None:
+        st.warning("No data found for this player.")
+        st.stop()
+    pmin = pd.to_datetime(pmin_raw).date()
+    pmax = pd.to_datetime(pmax_raw).date()
 
 with ctrl2:
     scout_dates = st.date_input(
-        "📅 Period",
-        value=(p_min, p_max),
-        min_value=p_min,
-        max_value=p_max,
+        "Period",
+        value=(pmin, pmax),
+        min_value=pmin,
+        max_value=pmax,
         key="scout_dates"
     )
-
-if isinstance(scout_dates, (tuple, list)) and len(scout_dates) == 2:
-    scout_start, scout_end = scout_dates
-else:
-    scout_start = scout_end = (scout_dates[0] if isinstance(scout_dates, (tuple, list)) else scout_dates)
+    if isinstance(scout_dates, (tuple, list)) and len(scout_dates) == 2:
+        scout_start, scout_end = scout_dates
+    else:
+        scout_start = scout_end = (scout_dates[0] if isinstance(scout_dates, (tuple, list)) else scout_dates)
 
 # ============================================================
-# PLAYER HEADER CARD (BigQuery)
+# PLAYER CARD
 # ============================================================
-player_row  = tag_to_row.loc[selected_tag]
-is_active   = bool(player_row["is_active"])
-last_team   = player_row["last_team"] or "—"
-last_seen   = str(player_row["last_seen"])[:10]
-badge       = "🟢 Active Roster" if is_active else "🔵 Scouting Target"
-badge_color = "#1a7f37" if is_active else "#0969da"
+player_row = tag_to_row.loc[selected_tag]
+is_active  = bool(player_row["is_active"])
+last_team  = player_row["last_team"] or ""
+last_seen  = str(player_row["last_seen"])[:10]
+
+badge       = "Active Roster"  if is_active else "Scouting Target"
+badge_color = "1a7f37"         if is_active else "0969da"
 
 p_img_df = fetch_data("""
-    SELECT player_img
-    FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-    WHERE player_tag = @tag
-    ORDER BY battle_time DESC
-    LIMIT 1
+    SELECT player_img FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+    WHERE player_tag = @tag ORDER BY battle_time DESC LIMIT 1
 """, json.dumps([{"name": "tag", "bq_type": "STRING", "value": selected_tag}]))
 
 card_img, card_info = st.columns([1, 7])
@@ -307,22 +288,22 @@ with card_img:
             st.image(b64, width=80)
 with card_info:
     st.markdown(
-        f"### {selected_name} &nbsp;"
-        f"<span style='background:{badge_color};color:white;"
+        f"{selected_name}&nbsp;"
+        f"<span style='background:#{badge_color};color:white;"
         f"padding:3px 10px;border-radius:12px;font-size:0.8rem'>{badge}</span>",
         unsafe_allow_html=True
     )
-    st.caption(f"**Team:** {last_team}  |  **Tag:** `{selected_tag}`  |  **Last seen:** {last_seen}")
+    st.caption(f"Team: {last_team} | Tag: {selected_tag} | Last seen: {last_seen}")
 
 st.markdown("---")
 
 # ============================================================
-# LIVE PROFILE — Brawl Stars API
+# API PROFILE
 # ============================================================
 profile = fetch_api_profile(selected_tag)
 
 if profile and "_error" in profile:
-    err = profile["_error"]
+    err    = profile["_error"]
     detail = profile.get("_detail", "")
     if err == "no_token":
         st.warning("⚠️ BRAWL_API_TOKEN não encontrado nos secrets.")
@@ -332,14 +313,14 @@ if profile and "_error" in profile:
         st.warning(f"⚠️ Erro ao chamar a API: {detail}")
     profile = None
 
-# Monta dict de win streak por brawler (para cruzar com BigQuery)
+# Monta dict de win streak por brawler para cruzar com BigQuery
 api_streak_map = {}
 if profile:
     for b in profile.get("brawlers", []):
         api_streak_map[b.get("name", "").upper()] = b.get("maxWinStreak", 0)
 
 if profile:
-    st.subheader("🎖️ Live Profile")
+    st.subheader("Live Profile")
 
     club     = profile.get("club") or {}
     icon_id  = (profile.get("icon") or {}).get("id")
@@ -369,76 +350,91 @@ if profile:
             unsafe_allow_html=True
         )
         if club:
-            st.caption(f"🤝 Club: **{club.get('name', '—')}** `{club.get('tag', '')}`  |  "
-                       f"Exp Lvl {profile.get('expLevel', '—')} ({profile.get('expPoints', 0):,} XP)")
+            st.caption(
+                f"🏰 Club: {club.get('name','')} `{club.get('tag','')}` | "
+                f"Exp Lvl {profile.get('expLevel','')} ({profile.get('expPoints',0):,} XP)"
+            )
 
-    # KPIs da API
-    a1, a2, a3, a4, a5 = st.columns(5)
+    # ── KPIs — nível do jogador ───────────────────────────────
+    # [NOVO] totalPrestigeLevel adicionado como a6
+    a1, a2, a3, a4, a5, a6 = st.columns(6)
     a1.metric("🏆 Trophies",         f"{profile.get('trophies', 0):,}")
     a2.metric("📈 Highest Trophies", f"{profile.get('highestTrophies', 0):,}")
     a3.metric("🎮 3v3 Victories",    f"{profile.get('3vs3Victories', 0):,}")
     a4.metric("🥊 Solo Victories",   f"{profile.get('soloVictories', 0):,}")
     a5.metric("👥 Duo Victories",    f"{profile.get('duoVictories', 0):,}")
+    a6.metric("🎖️ Prestige Level",   f"{profile.get('totalPrestigeLevel', 0):,}")  # [NOVO]
 
-    # Brawler Roster da API
+    # ── Brawler Roster da API ─────────────────────────────────
     brawlers_api = profile.get("brawlers", [])
     if brawlers_api:
         st.markdown("---")
         st.subheader(f"🔓 Brawler Roster — {len(brawlers_api)} unlocked")
 
+        # [NOVO] prestige_level, hyper_charges, buff_star_power, buff_hyper_charge adicionados
         df_api_brawlers = pd.DataFrame([
             {
-                "brawler_name":     b.get("name", ""),
-                "power":            b.get("power", 0),
-                "rank":             b.get("rank", 0),
-                "trophies":         b.get("trophies", 0),
-                "highest_trophies": b.get("highestTrophies", 0),
-                "max_win_streak":   b.get("maxWinStreak", 0),
-                "gadgets":          len(b.get("gadgets", [])),
-                "star_powers":      len(b.get("starPowers", [])),
-                "gears":            len(b.get("gears", [])),
+                "brawler_name":      b.get("name", ""),
+                "power":             b.get("power", 0),
+                "rank":              b.get("rank", 0),
+                "trophies":          b.get("trophies", 0),
+                "highest_trophies":  b.get("highestTrophies", 0),
+                "prestige_level":    b.get("prestigeLevel", 0),                                     # [NOVO]
+                "max_win_streak":    b.get("maxWinStreak", 0),
+                "gadgets":           len(b.get("gadgets", [])),
+                "star_powers":       len(b.get("starPowers", [])),
+                "hyper_charges":     len(b.get("hyperCharges", [])),                                # [NOVO]
+                "gears":             len(b.get("gears", [])),
+                "buff_star_power":   "✅" if (b.get("buffies") or {}).get("starPower", False) else "—",    # [NOVO]
+                "buff_hyper_charge": "✅" if (b.get("buffies") or {}).get("hyperCharge", False) else "—",  # [NOVO]
             }
             for b in brawlers_api
         ]).sort_values("trophies", ascending=False).reset_index(drop=True)
 
         max_trophies = int(df_api_brawlers["trophies"].max()) + 1 if not df_api_brawlers.empty else 1000
 
-        # Roster Summary
+        # ── Roster Summary ────────────────────────────────────
         df_full = df_api_brawlers.copy()
-        s1, s2, s3, s4, s5 = st.columns(5)
-        s1.metric("⚡ Max Power (11)",     int((df_full["power"] == 11).sum()))
-        s2.metric("🏅 Rank 35+",           int((df_full["rank"] >= 35).sum()))
-        s3.metric("🔧 All Gadgets (2/2)",  int((df_full["gadgets"] == 2).sum()))
-        s4.metric("⭐ All Star Powers",    int((df_full["star_powers"] == 2).sum()))
-        s5.metric("⚙️ All Gears (2/2)",   int((df_full["gears"] == 2).sum()))
+        # [NOVO] 7 colunas: s6 = HyperCharge, s7 = SP Buffed
+        s1, s2, s3, s4, s5, s6, s7 = st.columns(7)
+        s1.metric("⚡ Max Power (11)",    int((df_full["power"] == 11).sum()))
+        s2.metric("🏅 Rank 35+",          int((df_full["rank"] >= 35).sum()))
+        s3.metric("🔧 All Gadgets (2/2)", int((df_full["gadgets"] == 2).sum()))
+        s4.metric("⭐ All Star Powers",   int((df_full["star_powers"] == 2).sum()))
+        s5.metric("⚙️ All Gears (2/2)",  int((df_full["gears"] == 2).sum()))
+        s6.metric("⚡ Has HyperCharge",   int((df_full["hyper_charges"] > 0).sum()))               # [NOVO]
+        s7.metric("🟢 SP Buffed",         int((df_full["buff_star_power"] == "✅").sum()))          # [NOVO]
 
         st.dataframe(
             df_api_brawlers,
             use_container_width=True,
             column_config={
-                "brawler_name":     st.column_config.TextColumn("Brawler"),
-                "power":            st.column_config.NumberColumn("Power",        format="%d"),
-                "rank":             st.column_config.NumberColumn("Rank",         format="%d"),
-                "trophies":         st.column_config.ProgressColumn(
-                                        "Trophies", format="%d",
-                                        min_value=0, max_value=max_trophies
-                                    ),
-                "highest_trophies": st.column_config.NumberColumn("Highest 🏆",   format="%d"),
-                "max_win_streak":   st.column_config.NumberColumn("🔥 Win Streak", format="%d"),
-                "gadgets":          st.column_config.NumberColumn("Gadgets",      format="%d"),
-                "star_powers":      st.column_config.NumberColumn("Star Powers",  format="%d"),
-                "gears":            st.column_config.NumberColumn("Gears",        format="%d"),
+                "brawler_name":      st.column_config.TextColumn("Brawler"),
+                "power":             st.column_config.NumberColumn("Power", format="%d"),
+                "rank":              st.column_config.NumberColumn("Rank", format="%d"),
+                "trophies":          st.column_config.ProgressColumn(
+                                         "Trophies", format="%d",
+                                         min_value=0, max_value=max_trophies
+                                     ),
+                "highest_trophies":  st.column_config.NumberColumn("Highest 🏆", format="%d"),
+                "prestige_level":    st.column_config.NumberColumn("Prestige ⭐", format="%d"),    # [NOVO]
+                "max_win_streak":    st.column_config.NumberColumn("🔥 Win Streak", format="%d"),
+                "gadgets":           st.column_config.NumberColumn("Gadgets", format="%d"),
+                "star_powers":       st.column_config.NumberColumn("Star Powers", format="%d"),
+                "hyper_charges":     st.column_config.NumberColumn("⚡ Hyper", format="%d"),       # [NOVO]
+                "gears":             st.column_config.NumberColumn("Gears", format="%d"),
+                "buff_star_power":   st.column_config.TextColumn("SP Buff"),                       # [NOVO]
+                "buff_hyper_charge": st.column_config.TextColumn("HC Buff"),                       # [NOVO]
             },
             hide_index=True
         )
-
-else:
-    st.caption("⚠️ Live profile unavailable — check API token or player accessibility.")
+    else:
+        st.caption("Live profile unavailable — check API token or player accessibility.")
 
 st.markdown("---")
 
 # ============================================================
-# SCOUT WHERE + PARAMS (BigQuery)
+# BIGQUERY STATS — WHERE CLAUSE
 # ============================================================
 scout_where  = "player_tag = @tag AND DATE(battle_time) BETWEEN @d_start AND @d_end"
 scout_params = json.dumps([
@@ -448,7 +444,7 @@ scout_params = json.dumps([
 ])
 
 # ============================================================
-# KPIs — BigQuery
+# STATS IN PERIOD
 # ============================================================
 st.subheader("📊 Stats in Period")
 
@@ -476,9 +472,9 @@ if not df_kpi.empty:
 st.markdown("---")
 
 # ============================================================
-# BRAWLER POOL — BigQuery + win streak da API
+# BRAWLER POOL
 # ============================================================
-st.header("👊 Brawler Pool")
+st.header("🃏 Brawler Pool")
 
 df_pool = fetch_data(f"""
     WITH total AS (
@@ -487,9 +483,9 @@ df_pool = fetch_data(f"""
         WHERE {scout_where}
     )
     SELECT
-        MAX(brawler_img)  AS brawler_img,
+        MAX(brawler_img) AS brawler_img,
         brawler_name,
-        COUNT(*)          AS picks,
+        COUNT(*) AS picks,
         SAFE_DIVIDE(COUNT(*) * 100.0, MAX(total.total_games)) AS pick_rate,
         COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) AS wins,
         COUNT(DISTINCT CASE WHEN player_result = 'defeat'  THEN game END) AS losses,
@@ -506,36 +502,29 @@ df_pool = fetch_data(f"""
 if df_pool.empty:
     st.warning("No brawler data for the selected period.")
 else:
-    # Cruza com win streak da API
     if api_streak_map:
         df_pool["max_win_streak"] = df_pool["brawler_name"].str.upper().map(api_streak_map).fillna(0).astype(int)
     else:
         df_pool["max_win_streak"] = 0
 
-    pool_col_order = ["brawler_img", "brawler_name", "picks", "pick_rate", "wins", "losses", "win_rate", "max_win_streak"]
+    pool_col_order  = ["brawler_img", "brawler_name", "picks", "pick_rate", "wins", "losses", "win_rate", "max_win_streak"]
     pool_col_config = {
-        "brawler_img":    st.column_config.ImageColumn(""),
+        "brawler_img":    st.column_config.ImageColumn(),
         "brawler_name":   st.column_config.TextColumn("Brawler"),
-        "picks":          st.column_config.NumberColumn("Picks",        format="%d"),
-        "pick_rate":      st.column_config.ProgressColumn("Pick Rate",   format="%.1f%%", min_value=0, max_value=100),
-        "wins":           st.column_config.NumberColumn("Wins",          format="%d"),
-        "losses":         st.column_config.NumberColumn("Losses",        format="%d"),
-        "win_rate":       st.column_config.ProgressColumn("Win Rate",    format="%.1f%%", min_value=0, max_value=100),
+        "picks":          st.column_config.NumberColumn("Picks", format="%d"),
+        "pick_rate":      st.column_config.ProgressColumn("Pick Rate", format="%.1f%%", min_value=0, max_value=100),
+        "wins":           st.column_config.NumberColumn("Wins", format="%d"),
+        "losses":         st.column_config.NumberColumn("Losses", format="%d"),
+        "win_rate":       st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
         "max_win_streak": st.column_config.NumberColumn("🔥 Win Streak", format="%d"),
     }
-
-    st.dataframe(
-        df_pool,
-        use_container_width=True,
-        column_order=pool_col_order,
-        column_config=pool_col_config,
-        hide_index=True
-    )
+    st.dataframe(df_pool, use_container_width=True,
+                 column_order=pool_col_order, column_config=pool_col_config, hide_index=True)
 
 st.markdown("---")
 
 # ============================================================
-# MAP PERFORMANCE — BigQuery
+# MAP PERFORMANCE
 # ============================================================
 st.header("🗺️ Map Performance")
 
@@ -568,9 +557,9 @@ else:
             "map_img":  st.column_config.ImageColumn("Preview"),
             "map":      st.column_config.TextColumn("Map"),
             "mode":     st.column_config.TextColumn("Mode"),
-            "games":    st.column_config.NumberColumn("Games",    format="%d"),
-            "wins":     st.column_config.NumberColumn("Wins",     format="%d"),
-            "losses":   st.column_config.NumberColumn("Losses",   format="%d"),
+            "games":    st.column_config.NumberColumn("Games", format="%d"),
+            "wins":     st.column_config.NumberColumn("Wins", format="%d"),
+            "losses":   st.column_config.NumberColumn("Losses", format="%d"),
             "win_rate": st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
         },
         hide_index=True
@@ -579,7 +568,7 @@ else:
 st.markdown("---")
 
 # ============================================================
-# TIMELINE — BigQuery
+# TIMELINE
 # ============================================================
 st.header("📈 Timeline")
 
@@ -611,43 +600,36 @@ else:
 
     if wr_type == "Daily":
         df_tl["win_rate"] = (df_tl["wins"] / df_tl["total_games"] * 100).round(1)
-        ylabel = "Win Rate — Daily"
+        y_label = "Win Rate (Daily)"
     else:
         df_tl["cum_wins"]  = df_tl["wins"].cumsum()
         df_tl["cum_games"] = df_tl["total_games"].cumsum()
         df_tl["win_rate"]  = (df_tl["cum_wins"] / df_tl["cum_games"] * 100).round(1)
-        ylabel = "Win Rate — Cumulative"
+        y_label = "Win Rate (Cumulative)"
 
     df_tl["games_label"] = df_tl["total_games"].astype(str) + " games"
 
     fig = px.line(
-        df_tl,
-        x="period",
-        y="win_rate",
-        markers=True,
+        df_tl, x="period", y="win_rate", markers=True,
         hover_data={"games_label": True, "total_games": False},
-        labels={"period": "Date", "win_rate": ylabel, "games_label": "Games"},
+        labels={"period": "Date", "win_rate": y_label, "games_label": "Games"},
         title=f"{selected_name} — Win Rate over Time ({granularity} / {wr_type})"
     )
-    fig.add_hline(
-        y=50, line_dash="dash", line_color="gray", opacity=0.5,
-        annotation_text="50%", annotation_position="bottom right"
-    )
+    fig.add_hline(y=50, line_dash="dash", line_color="gray", opacity=0.5,
+                  annotation_text="50%", annotation_position="bottom right")
     fig.update_layout(
         yaxis=dict(range=[0, 100], ticksuffix="%"),
-        xaxis_title="Date",
-        yaxis_title=ylabel,
-        hovermode="x unified",
-        height=400
+        xaxis_title="Date", yaxis_title=y_label,
+        hovermode="x unified", height=400
     )
     st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
 # ============================================================
-# RECENT GAMES — BigQuery
+# RECENT GAMES
 # ============================================================
-st.header("📋 Recent Games")
+st.header("🕹️ Recent Games")
 
 df_games = fetch_data(f"""
     SELECT DISTINCT
@@ -671,15 +653,14 @@ else:
     df_games["result_show"] = df_games["player_result"].apply(
         lambda x: "WIN" if x == "victory" else "LOSS"
     )
-
     st.caption("Click a row to view the full draft.")
     ev = st.dataframe(
         df_games,
         use_container_width=True,
         column_order=["game", "battle_time", "map", "mode", "result_show", "player_team"],
         column_config={
-            "game":        st.column_config.NumberColumn("Game",      format="%d"),
-            "battle_time": st.column_config.TextColumn("Date / Time"),
+            "game":        st.column_config.NumberColumn("Game", format="%d"),
+            "battle_time": st.column_config.TextColumn("Date/Time"),
             "map":         st.column_config.TextColumn("Map"),
             "mode":        st.column_config.TextColumn("Mode"),
             "result_show": st.column_config.TextColumn("Result"),
@@ -689,7 +670,6 @@ else:
         on_select="rerun",
         selection_mode="single-row"
     )
-
     selected = ev.selection.rows
     if selected:
         row = df_games.iloc[selected[0]]
