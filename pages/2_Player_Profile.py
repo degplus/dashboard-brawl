@@ -264,7 +264,7 @@ if brawlers_api:
     # [NOVO] 7 colunas: s6 = HyperCharge, s7 = SP Buffed
     s1, s2, s3, s4, s5, s6, s7 = st.columns(7)
     s1.metric("⚡ Max Power (11)",    int((df_full["power"] == 11).sum()))
-    s2.metric("🏅 Rank 35+",          int((df_full["rank"] >= 35).sum()))
+    s2.metric("🏅 Rank 5+",          int((df_full["rank"] >= 5).sum()))
     s3.metric("🔧 All Gadgets (2/2)", int((df_full["gadgets"] == 2).sum()))
     s4.metric("⭐ All Star Powers",   int((df_full["star_powers"] == 2).sum()))
     s5.metric("⚙️ All Gears (2/2)",  int((df_full["gears"] == 2).sum()))
