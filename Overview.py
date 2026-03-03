@@ -149,16 +149,21 @@ def get_bq_client():
 client = get_bq_client()
 
 # ============================================================
+# TTL DINÂMICO
+# ============================================================
+TTL = 600 if st.secrets.get("tournament_mode", False) else 3600
+
+# ============================================================
 # CACHE LOAD TIME
 # ============================================================
-@st.cache_data(ttl=3600, persist="disk")
+@st.cache_data(ttl=TTL, persist="disk")
 def get_cache_load_time():
     return time.time()
 
 # ============================================================
 # FETCH DATA
 # ============================================================
-@st.cache_data(ttl=3600, persist="disk")
+@st.cache_data(ttl=TTL, persist="disk")
 def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
     bq_params = []
     if params_json:
@@ -201,7 +206,7 @@ def convert_img_column(series: pd.Series) -> pd.Series:
 # ============================================================
 # DIM FILTERS
 # ============================================================
-@st.cache_data(ttl=3600, persist="disk")
+@st.cache_data(ttl=TTL, persist="disk")
 def load_dim_filters() -> pd.DataFrame:
     df = fetch_data("SELECT * FROM `brawl-sandbox.brawl_stats.dim_filters`")
     df["battle_date"] = pd.to_datetime(df["battle_date"]).dt.date
@@ -210,7 +215,7 @@ def load_dim_filters() -> pd.DataFrame:
 # ============================================================
 # PLAYER NAMES (active only)
 # ============================================================
-@st.cache_data(ttl=3600, persist="disk")
+@st.cache_data(ttl=TTL, persist="disk")
 def load_player_names() -> dict:
     df = fetch_data("""
         SELECT v.player_tag, v.player_name AS display_name
@@ -231,7 +236,7 @@ def load_player_names() -> dict:
 # ============================================================
 # ALL PLAYER NAMES
 # ============================================================
-@st.cache_data(ttl=3600, persist="disk")
+@st.cache_data(ttl=TTL, persist="disk")
 def load_all_player_names() -> dict:
     df = fetch_data("""
         SELECT player_tag,
@@ -502,22 +507,24 @@ with st.sidebar:
             st.markdown("---")
 
     st.markdown("---")
-    if any(st.session_state[k] for k in FILTER_KEYS):
-        if st.button("🗑️ Clear All Filters", use_container_width=True):
-            st.session_state["clear_filters"] = True
-            st.rerun()
+    # caso eu queira colocar o botão de refresh desativar as #
+    #if any(st.session_state[k] for k in FILTER_KEYS):
+    #  if st.button("🗑️ Clear All Filters", use_container_width=True):
+    #       st.session_state["clear_filters"] = True
+    #       st.rerun()
 
     cache_ts  = get_cache_load_time()
     loaded_at = datetime.datetime.fromtimestamp(cache_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     mins_ago  = int((time.time() - cache_ts) / 60)
     ago_text  = "just now" if mins_ago == 0 else "1 min ago" if mins_ago == 1 else f"{mins_ago} min ago"
 
+    ttl_mins = TTL // 60
+    mode_label = "🏆 Tournament Mode" if st.secrets.get("tournament_mode", False) else "⚙️ Normal Mode"
+
     st.success(f"⚡ Cache loaded at {loaded_at}")
     st.caption(f"🕐 Updated {ago_text}")
+    st.caption(f"🔄 Refreshing every {ttl_mins} min  |  {mode_label}")
 
-    if st.button("🔄 Refresh Cache", use_container_width=True, type="primary"):
-        st.cache_data.clear()
-        st.rerun()
 
 
    
