@@ -320,14 +320,14 @@ with st.sidebar:
         )
     )
 
-# [NOVO] ↓↓↓
-full_squad_only = st.toggle(
-    "👥 Full Squad Only",
-    value=False,
-    help="On: Shows only games where all 3 tracked players from the same team played together."
-)
+    # [NOVO] ↓↓↓
+    full_squad_only = st.toggle(
+        "👥 Full Squad Only",
+        value=False,
+        help="On: Shows only games where all 3 tracked players from the same team played together."
+    )
 
-st.markdown("---")
+    st.markdown("---")
 
 
 # ============================================================
