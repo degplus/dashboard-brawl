@@ -509,11 +509,11 @@ with st.sidebar:
             st.markdown("---")
 
     st.markdown("---")
-    # caso eu queira colocar o botão de refresh desativar as #
-    #if any(st.session_state[k] for k in FILTER_KEYS):
-    #  if st.button("🗑️ Clear All Filters", use_container_width=True):
-    #       st.session_state["clear_filters"] = True
-    #       st.rerun()
+   
+    if any(st.session_state[k] for k in FILTER_KEYS):
+      if st.button("🗑️ Clear All Filters", use_container_width=True):
+           st.session_state["clear_filters"] = True
+    #      st.rerun()
 
     cache_ts  = get_cache_load_time()
     loaded_at = datetime.datetime.fromtimestamp(cache_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
