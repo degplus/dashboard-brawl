@@ -151,7 +151,9 @@ client = get_bq_client()
 # ============================================================
 # TTL DINÂMICO
 # ============================================================
-TTL = 600 if st.secrets.get("tournament_mode", False) else 3600
+# TTL dinâmico por modo
+_tournament_mode = st.secrets.get("tournament_mode", False)
+TTL = 600 if _tournament_mode else 3600
 
 # ============================================================
 # CACHE LOAD TIME
