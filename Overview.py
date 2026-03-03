@@ -320,7 +320,15 @@ with st.sidebar:
         )
     )
 
-    st.markdown("---")
+# [NOVO] ↓↓↓
+full_squad_only = st.toggle(
+    "👥 Full Squad Only",
+    value=False,
+    help="On: Shows only games where all 3 tracked players from the same team played together."
+)
+
+st.markdown("---")
+
 
 # ============================================================
 # GET FILTER OPTIONS
@@ -362,21 +370,17 @@ def get_filter_options(exclude_key: str) -> list:
 # BUILD WHERE (COM SUPORTE A H2H)
 # ============================================================
 def build_where(use_datetime: bool = False):
-    date_col = "DATE(battle_time)" if use_datetime else "battle_date"
-    conds    = [f"{date_col} BETWEEN @d_start AND @d_end"]
+    date_col   = "DATE(battle_time)" if use_datetime else "battle_date"
+    conds      = [f"{date_col} BETWEEN @d_start AND @d_end"]
     raw_params = [
         {"name": "d_start", "bq_type": "DATE", "value": str(date_start)},
         {"name": "d_end",   "bq_type": "DATE", "value": str(date_end)},
     ]
 
-    # --- NOVO: FILTRO SQL PARA H2H ---
-    # Se o modo H2H estiver ativo (e tiver 2 times), forçamos o filtro de jogo
+    # --- H2H FILTER ---
     if is_h2h_mode and len(st.session_state.f_team) == 2:
         team_a = st.session_state.f_team[0]
         team_b = st.session_state.f_team[1]
-        
-        # Essa subquery mágica agrupa por jogo e garante que o count de times seja 2
-        # filtrando apenas os jogos que contém AMBOS os times selecionados.
         conds.append(f"""
             game IN (
                 SELECT game
@@ -388,18 +392,27 @@ def build_where(use_datetime: bool = False):
         """)
         raw_params.append({"name": "h2h_t1", "bq_type": "STRING", "value": team_a})
         raw_params.append({"name": "h2h_t2", "bq_type": "STRING", "value": team_b})
-    # ---------------------------------
+    # ------------------
+
+    # --- FULL SQUAD FILTER ---
+    if full_squad_only:
+        conds.append("""
+            game IN (
+                SELECT game
+                FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+                WHERE player_team IS NOT NULL
+                GROUP BY game, player_team
+                HAVING COUNT(DISTINCT player_tag) >= 3
+            )
+        """)
+    # -------------------------
 
     for key, col in COL_MAP.items():
         values = st.session_state.get(key, [])
         if not values:
             continue
-        
-        # Se estiver em H2H Mode, a gente PULA o filtro padrão de time
-        # porque já fizemos o filtro especial ali em cima.
         if is_h2h_mode and key == "f_team":
-            continue 
-
+            continue
         if key == "f_player":
             names_dict  = player_names if show_only_active else all_player_names
             name_to_tag = {v: k for k, v in names_dict.items()}
@@ -413,6 +426,7 @@ def build_where(use_datetime: bool = False):
             raw_params.append({"name": key, "bq_type": "STRING", "value": values})
 
     return " AND ".join(conds), json.dumps(raw_params)
+
 
 # ============================================================
 # BUILD WHERE H2H
