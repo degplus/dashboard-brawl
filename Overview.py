@@ -275,10 +275,9 @@ if st.session_state.get("clear_filters", False):
 # ============================================================
 # AUTO-REFRESH
 # ============================================================
-if time.time() - get_cache_load_time() > 3600:
+if time.time() - get_cache_load_time() > TTL:
     st.cache_data.clear()
     st.rerun()
-
 # ============================================================
 # LOAD BASE DATA
 # ============================================================
