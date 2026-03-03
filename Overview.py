@@ -501,6 +501,11 @@ with st.sidebar:
     st.success(f"⚡ Cache loaded at {loaded_at}")
     st.caption(f"🕐 Updated {ago_text}")
 
+    if st.button("🔄 Refresh Cache", use_container_width=True, type="primary"):
+        st.cache_data.clear()
+        st.rerun()
+
+
    
 # ============================================================
 # WHERE CLAUSE FINAL
