@@ -158,7 +158,7 @@ TTL = 600 if _tournament_mode else 3600
 # ============================================================
 # CACHE LOAD TIME
 # ============================================================
-@st.cache_data(ttl=TTL, persist="disk")
+@st.cache_data(ttl=TTL)
 def get_cache_load_time():
     return time.time()
 
@@ -275,9 +275,20 @@ if st.session_state.get("clear_filters", False):
 # ============================================================
 # AUTO-REFRESH
 # ============================================================
+from streamlit_autorefresh import st_autorefresh
+
+# Força o Streamlit a re-executar o script a cada TTL segundos
+_refresh_count = st_autorefresh(
+    interval=TTL * 1000,   # ms → converte TTL para milissegundos
+    limit=None,            # sem limite de refreshes
+    key="dashboard_autorefresh"
+)
+
+# Quando o auto-refresh dispara um rerun, verifica se o cache expirou
 if time.time() - get_cache_load_time() > TTL:
     st.cache_data.clear()
     st.rerun()
+
 # ============================================================
 # LOAD BASE DATA
 # ============================================================
