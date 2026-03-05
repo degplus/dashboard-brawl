@@ -24,9 +24,6 @@ st.set_page_config(
     layout="wide"
 )
 
-if 'authentication_status' not in st.session_state:
-    st.session_state['authentication_status'] = None
-
 # ============================================================
 # 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
 # ============================================================
@@ -60,58 +57,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
-# # ============================================================
-# # 🔐 AUTHENTICATION SYSTEM (THE GATEKEEPER)
-# # ============================================================
-# def to_plain_dict(obj):
-#     if hasattr(obj, 'items'):
-#         return {k: to_plain_dict(v) for k, v in obj.items()}
-#     return obj
-
-# credentials = to_plain_dict(st.secrets["credentials"])
-# cookie_cfg  = to_plain_dict(st.secrets["cookie"])
-
-# authenticator = stauth.Authenticate(
-#     credentials,
-#     cookie_cfg["name"],
-#     cookie_cfg["key"],
-#     int(cookie_cfg["expiry_days"])
-# )
-
-# # Chama o login - a biblioteca tenta ler o cookie aqui
-# authenticator.login(location='main')
-
-# # FORÇA A VERIFICAÇÃO: Se o status for None, a gente checa se o cookie 
-# # não ficou perdido no limbo do session_state
-# if st.session_state.get("authentication_status") is True:
-#     authentication_status = True
-#     username = st.session_state.get("username")
-#     name = st.session_state.get("name")
-# elif st.session_state.get("authentication_status") is False:
-#     st.error("Username/password is incorrect")
-#     st.stop()
-# else:
-#     st.warning("Please enter your username and password")
-#     st.stop()
-
-
-
-# # ============================================================
-# # SIDEBAR - ÁREA LOGADA
-# # ============================================================
-# with st.sidebar:
-#     st.write(f"Logged as: **{name}**")
-    
-#     # Verifica se é o Admin
-#     if username == "degadmin":
-#         st.subheader("🛠️ Admin Panel")
-#         if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
-#             st.cache_data.clear()
-#             st.rerun()
-
-#     st.divider()
-#     authenticator.logout('Logout', 'sidebar')
 
 def set_gradient_background():
     page_bg_img = """
@@ -154,6 +99,23 @@ client = get_bq_client()
 # TTL dinâmico por modo
 _tournament_mode = st.secrets.get("tournament_mode", False)
 TTL = 600 if _tournament_mode else 3600
+
+# ============================================================
+# 🔐 AUTHENTICATION
+# ============================================================
+from login import check_existing_session, render_login, clear_token
+from auth import do_logout
+
+if not check_existing_session(client):
+    render_login(client)
+    st.stop()
+
+# Block access if password change is required
+if st.session_state.get("must_change_password"):
+    st.warning("⚠️ You need to set a new password before continuing.")
+    st.page_link("pages/3_Change_Password.py", label="👉 Click here to set your password")
+    st.stop()
+
 
 # ============================================================
 # CACHE LOAD TIME
@@ -308,6 +270,27 @@ st.markdown("---")
 # ============================================================
 with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)
+
+    # --- LOGGED IN USER ---
+    st.markdown(f"👤 **{st.session_state.get('user_name', '')}**")
+    st.caption(st.session_state.get("user_email", ""))
+
+    if st.session_state.get("user_email") == "android.deg@gmail.com":
+        st.subheader("🛠️ Admin Panel")
+        if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+            st.cache_data.clear()
+            st.rerun()
+        st.page_link("pages/4_Admin.py", label="👥 Manage Users", icon="👥")
+
+    st.divider()
+
+    if st.button("🚪 Logout", use_container_width=True):
+        do_logout(client, st.session_state.get("session_token", ""))
+        clear_token()
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+
     st.markdown("---")
     st.header("🔍 Filters")
 
@@ -337,7 +320,6 @@ with st.sidebar:
         )
     )
 
-    # [NOVO] ↓↓↓
     full_squad_only = st.toggle(
         "👥 Full Squad Only",
         value=False,
