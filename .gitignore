@@ -1,4 +1,5 @@
 .streamlit/secrets.toml
+create_admin.py
 __pycache__/
 *.pyc
 
