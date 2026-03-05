@@ -111,3 +111,6 @@ with tab2:
             with st.spinner("Creating user..."):
                 temp = generate_temp_password()
                 create_user(client, new_email, new_name, temp)
+                send_welcome_email(new_email, new_name, temp)
+                st.cache_data.clear()
+            st.success(f"✅ User **{new_name}** created! Welcome email sent to {new_email}.")
