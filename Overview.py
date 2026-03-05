@@ -280,7 +280,7 @@ with st.sidebar:
         if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
             st.cache_data.clear()
             st.rerun()
-        st.page_link("pages/4_Admin.py", label="👥 Manage Users", icon="👥")
+        st.page_link("pages/4_Admin.py", label="Manage Users", icon="👥")
 
     st.divider()
 
