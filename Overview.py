@@ -73,8 +73,7 @@ def set_gradient_background():
 
 set_gradient_background()
 
-# Adiciona a logo no topo da sidebar
-st.logo("assets/logo.png", icon_image="assets/logo.png")
+
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -109,6 +108,9 @@ from auth import do_logout
 if not check_existing_session(client):
     render_login(client)
     st.stop()
+
+# Adiciona a logo no topo da sidebar
+st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 # Block access if password change is required
 if st.session_state.get("must_change_password"):

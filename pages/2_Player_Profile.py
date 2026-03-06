@@ -6,9 +6,8 @@ from PIL import Image
 import pandas as pd
 
 # ============================================================
-# PAGE CONFIG
+# PAGE CONFIG (Regra do Streamlit: Tem que ser o primeiro de todos)
 # ============================================================
-
 st.set_page_config(
     page_title="Player Profile — DegStats",
     page_icon="assets/logo.png",
@@ -16,7 +15,7 @@ st.set_page_config(
 )
 
 # ============================================================
-# BIGQUERY CLIENT & AUTHENTICATION GUARD
+# BIGQUERY CLIENT & AUTHENTICATION GUARD (O Segurança)
 # ============================================================
 from google.oauth2 import service_account
 from google.cloud import bigquery
@@ -32,15 +31,13 @@ def get_bq_client():
 
 client = get_bq_client()
 
-# Force redirect to Login screen if not logged in
+# Segurança barra quem não tem crachá e chuta pra tela inicial
 if not check_existing_session(client):
     st.switch_page("Overview.py")
 
-st.logo("assets/logo.png", icon_image="assets/logo.png")
-
-# O código original continua abaixo...
-with st.sidebar:
-
+# ============================================================
+# 🎨 UI: SIDEBAR & LOGO (Só renderiza se passou da catraca acima)
+# ============================================================
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 with st.sidebar:

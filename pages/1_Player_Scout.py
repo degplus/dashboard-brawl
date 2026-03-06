@@ -11,14 +11,13 @@ from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============================================================
-# PAGE CONFIG
+# PAGE CONFIG (Apenas configurações que não desenham nada na tela)
 # ============================================================
 st.set_page_config(
     page_title="Player Scout — DegStats",
     page_icon="assets/logo.png",
     layout="wide"
 )
-st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 # ============================================================
 # BIGQUERY CLIENT
@@ -32,18 +31,20 @@ def get_bq_client():
     return bigquery.Client(credentials=credentials, project=project_id)
 
 client = get_bq_client()
+
 # ============================================================
-# 🔐 AUTHENTICATION GUARD
+# 🔐 AUTHENTICATION GUARD (O Segurança)
 # ============================================================
 from login import check_existing_session
 
-# If there is no valid session, force redirect to Overview (Login Screen)
+# Se não logado, expulsa para a tela de login na hora!
 if not check_existing_session(client):
     st.switch_page("Overview.py")
 
-# O código original continua abaixo...
-with st.sidebar:
-    st.image("assets/logo.png", use_container_width=True)
+# ============================================================
+# 🎨 UI: SIDEBAR & LOGO (Só desenha se passou do segurança acima)
+# ============================================================
+st.logo("assets/logo.png", icon_image="assets/logo.png")
 
 with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)

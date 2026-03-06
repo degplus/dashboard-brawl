@@ -1,13 +1,16 @@
+# pages/3_Change_Password.py
 import streamlit as st
 from auth import change_password
-from login import check_existing_session
 from google.oauth2 import service_account
 from google.cloud import bigquery
 
+# ============================================================
+# 1. PAGE CONFIG (Sempre o primeiro)
+# ============================================================
 st.set_page_config(page_title="Change Password — DegStats", page_icon="🔑", layout="centered")
 
 # ============================================================
-# BQ CLIENT (Rádio de comunicação com a base de dados)
+# 2. BIGQUERY CLIENT
 # ============================================================
 @st.cache_resource
 def get_bq_client():
@@ -22,17 +25,25 @@ def get_bq_client():
 client = get_bq_client()
 
 # ============================================================
-# GUARD — must be logged in (Segurança da porta)
+# 3. GUARD — Segurança (Verifica se está logado)
 # ============================================================
-# Se não estiver logado, chuta para a tela de login
+from login import check_existing_session
+
 if not check_existing_session(client):
     st.switch_page("Overview.py")
 
+# ============================================================
+# 4. INTERFACE VISUAL (Só aparece se o segurança liberou)
+# ============================================================
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image("assets/logo.png", use_container_width=True)
     st.markdown("### 🔑 Set New Password")
     st.markdown("---")
+    
+    # Daqui para baixo, o seu código original continua igualzinho:
+    # if not st.session_state.get("must_change_password"):
+    # ...
 
     if not st.session_state.get("must_change_password"):
         st.info("Your password is already set. You can change it below if you wish.")

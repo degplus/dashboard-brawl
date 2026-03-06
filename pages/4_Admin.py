@@ -1,17 +1,20 @@
+# pages/4_Admin.py
 import streamlit as st
 from google.oauth2 import service_account
 from google.cloud import bigquery
 from auth import set_user_active, reset_password, create_user
 from email_sender import send_welcome_email, send_reset_email, generate_temp_password
-from login import get_token
 
+# ============================================================
+# 1. PAGE CONFIG
+# ============================================================
 st.set_page_config(page_title="Admin Panel — DegStats", page_icon="🛠️", layout="centered")
 
 # ============================================================
-# BQ CLIENT
+# 2. BIGQUERY CLIENT
 # ============================================================
 @st.cache_resource
-def get_client():
+def get_bq_client():
     creds = service_account.Credentials.from_service_account_info(
         st.secrets["gcp_service_account"]
     )
@@ -20,17 +23,18 @@ def get_client():
         project=st.secrets.get("gcp_project", "brawl-sandbox")
     )
 
-client = get_client()
+client = get_bq_client()
 
 # ============================================================
-# GUARD — admin only
+# 3. GUARD DUPLO (Logado + Administrador)
 # ============================================================
 from login import check_existing_session
 
-# Force redirect to Login screen if not logged in
+# Segurança 1: Está logado? Se não, joga pro login.
 if not check_existing_session(client):
     st.switch_page("Overview.py")
 
+# Segurança 2: É o chefão? Se não, trava a tela com erro.
 if st.session_state.get("user_email") != "android.deg@gmail.com":
     st.error("⛔ Access restricted to administrators.")
     st.stop()

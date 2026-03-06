@@ -3,34 +3,32 @@ from auth import do_login, validate_token
 from streamlit_cookies_controller import CookieController
 
 COOKIE_NAME = "degstats_token"
-controller  = CookieController()
 
 # ============================================================
-# LÊ O TOKEN DO COOKIE DO NAVEGADOR
+# GERENCIADOR DE COOKIES (ISOLADO POR USUÁRIO)
+# ============================================================
+def get_controller():
+    # Isso garante que cada aba do navegador tenha seu próprio leitor de cookies
+    if "cookie_controller" not in st.session_state:
+        st.session_state["cookie_controller"] = CookieController()
+    return st.session_state["cookie_controller"]
+
+# ============================================================
+# FUNÇÕES DE TOKEN (Usando a gaveta particular)
 # ============================================================
 def get_token() -> str | None:
-    return controller.get(COOKIE_NAME)
+    return get_controller().get(COOKIE_NAME)
 
-# ============================================================
-# SALVA O TOKEN NO COOKIE DO NAVEGADOR
-# ============================================================
 def set_token(token: str):
-    controller.set(COOKIE_NAME, token, max_age=86400)  # 1 dia em segundos
+    get_controller().set(COOKIE_NAME, token, max_age=86400)  # 1 dia
 
-# ============================================================
-# REMOVE O TOKEN DO COOKIE
-# ============================================================
 def clear_token():
-    controller.remove(COOKIE_NAME)
+    get_controller().remove(COOKIE_NAME)
 
 # ============================================================
-# VERIFICA SE JÁ EXISTE SESSÃO VÁLIDA (usado no F5/reload)
+# VERIFICA SESSÃO
 # ============================================================
 def check_existing_session(client) -> bool:
-    """
-    Retorna True se o usuário já está autenticado via cookie.
-    Popula st.session_state com os dados do usuário.
-    """
     if st.session_state.get("authenticated"):
         return True
 
@@ -54,11 +52,7 @@ def check_existing_session(client) -> bool:
 # RENDER LOGIN FORM
 # ============================================================
 def render_login(client) -> bool:
-    """
-    Displays the login screen.
-    Returns True when login is successful.
-    """
-    # 🔒 INJECTED CSS: Hides the sidebar and hamburger menu on the login screen
+    # Esconde a barra lateral
     st.markdown(
         """
         <style>
@@ -92,10 +86,8 @@ def render_login(client) -> bool:
                 st.error(result["message"])
                 return False
 
-            # Save token to browser cookie
             set_token(result["token"])
 
-            # Populate session_state
             st.session_state["authenticated"]        = True
             st.session_state["user_email"]           = email
             st.session_state["user_name"]            = result["display_name"]
