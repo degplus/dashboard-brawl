@@ -2,7 +2,7 @@ import streamlit as st
 from auth import change_password
 from google.oauth2 import service_account
 from google.cloud import bigquery
-from login import check_existing_session
+from login import check_existing_session, apply_ui_permissions
 
 # ============================================================
 # 1. PAGE CONFIG
@@ -25,10 +25,14 @@ def get_bq_client():
 client = get_bq_client()
 
 # ============================================================
-# 3. GUARD — Segurança
+# 3. GUARD — Segurança e Camuflagem
 # ============================================================
 if not check_existing_session(client):
     st.switch_page("Overview.py")
+
+# Aplica a camuflagem para esconder Admin e Menu superior!
+apply_ui_permissions()
+
 
 # ============================================================
 # 4. INTERFACE VISUAL E LÓGICA
