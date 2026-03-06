@@ -33,13 +33,17 @@ def get_bq_client():
 client = get_bq_client()
 
 # ============================================================
-# 🔐 AUTHENTICATION GUARD (O Segurança)
+# 🔐 AUTHENTICATION GUARD (O Segurança e a Camuflagem)
 # ============================================================
-from login import check_existing_session
+from login import check_existing_session, apply_ui_permissions
 
 # Se não logado, expulsa para a tela de login na hora!
 if not check_existing_session(client):
     st.switch_page("Overview.py")
+
+# Aplica a camuflagem para esconder o menu Admin se não for o chefe
+apply_ui_permissions()
+
 
 # ============================================================
 # 🎨 UI: SIDEBAR & LOGO (Só desenha se passou do segurança acima)

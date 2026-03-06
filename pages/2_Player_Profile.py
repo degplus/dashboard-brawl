@@ -19,7 +19,7 @@ st.set_page_config(
 # ============================================================
 from google.oauth2 import service_account
 from google.cloud import bigquery
-from login import check_existing_session
+from login import check_existing_session, apply_ui_permissions
 
 @st.cache_resource
 def get_bq_client():
@@ -34,6 +34,9 @@ client = get_bq_client()
 # Segurança barra quem não tem crachá e chuta pra tela inicial
 if not check_existing_session(client):
     st.switch_page("Overview.py")
+
+# Aplica a camuflagem para esconder o menu Admin se não for o chefe
+apply_ui_permissions()
 
 # ============================================================
 # 🎨 UI: SIDEBAR & LOGO (Só renderiza se passou da catraca acima)

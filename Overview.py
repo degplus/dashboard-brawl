@@ -102,17 +102,21 @@ TTL = 600 if _tournament_mode else 3600
 # ============================================================
 # 🔐 AUTHENTICATION
 # ============================================================
-from login import check_existing_session, render_login, clear_token
+from login import check_existing_session, render_login, clear_token, apply_ui_permissions
 from auth import do_logout
 
+# 1. O Segurança: Verifica se o usuário tem ingresso válido
 if not check_existing_session(client):
     render_login(client)
     st.stop()
 
-# Adiciona a logo no topo da sidebar
+# 2. A Camuflagem: Se passou pelo segurança, esconde o menu Admin de quem não é o chefe
+apply_ui_permissions()
+
+# 3. Adiciona a logo no topo da sidebar
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 
-# Block access if password change is required
+# 4. Block access if password change is required
 if st.session_state.get("must_change_password"):
     st.warning("⚠️ You need to set a new password before continuing.")
     st.page_link("pages/3_Change_Password.py", label="👉 Click here to set your password")

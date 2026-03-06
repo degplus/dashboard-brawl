@@ -2,49 +2,71 @@ import streamlit as st
 from auth import do_login, validate_token
 
 # ============================================================
-# VERIFICA SESSÃO (Com sobrevivência ao F5 via URL)
+# VERIFICA SESSÃO (À prova de F5 e Navegação)
 # ============================================================
 def check_existing_session(client) -> bool:
-    # 1. Se a gaveta da aba já tem a confirmação, o usuário está navegando normalmente
+    # 1. Usuário já está navegando (mudou de página)
     if st.session_state.get("authenticated"):
+        # O TRUQUE MÁGICO: Devolve o token para a URL para não sumir ao mudar de página!
+        if "session_token" in st.session_state:
+            st.query_params["token"] = st.session_state["session_token"]
         return True
 
-    # 2. Se a gaveta está vazia (ex: ele deu F5), procuramos o "Ingresso" na URL
+    # 2. Usuário deu F5 (memória apagou), busca o ingresso na URL
     token = st.query_params.get("token")
-    
     if not token:
         return False
 
-    # 3. Achou o ingresso na URL! Vamos ver no banco se ele AINDA é o oficial
-    # (É aqui que a gente derruba o acesso simultâneo se o token tiver mudado no banco)
+    # 3. Valida no banco de dados (É aqui que derruba o espertinho do acesso duplo!)
     user = validate_token(client, token)
-    
     if not user:
-        # Se não for válido (alguém logou no lugar dele), limpamos a URL e bloqueamos
         st.query_params.clear()
         return False
 
-    # 4. Ingresso válido! Reconstruímos a gaveta para ele continuar navegando sem senha
+    # 4. Ingresso válido! Restaura a gaveta da sessão
     st.session_state["authenticated"]        = True
     st.session_state["user_email"]           = user["email"]
     st.session_state["user_name"]            = user["display_name"]
     st.session_state["must_change_password"] = user["must_change_password"]
     st.session_state["session_token"]        = token
+
+    st.query_params["token"] = token # Garante que fique na URL
     return True
+
+# ============================================================
+# CAMUFLAGEM DE UI (Esconde itens para não-admins)
+# ============================================================
+def apply_ui_permissions():
+    # Se o e-mail NÃO for o do Admin, injeta código para esconder coisas
+    if st.session_state.get("user_email") != "android.deg@gmail.com":
+        st.markdown(
+            """
+            <style>
+            /* 1. Oculta QUALQUER link na barra lateral que contenha a palavra 'Admin' */
+            a[href*="Admin"] { 
+                display: none !important; 
+            }
+            
+            /* 2. Oculta o menu de hambúrguer padrão do Streamlit (opcional) */
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
 # ============================================================
 # LOGOUT SEGURO
 # ============================================================
 def clear_token():
-    # Limpa a gaveta e joga o ingresso da URL no lixo
     st.session_state.clear()
     st.query_params.clear()
 
 # ============================================================
-# RENDER LOGIN FORM
+# RENDER LOGIN FORM (Continua igual...)
 # ============================================================
 def render_login(client) -> bool:
-    # Esconde a barra lateral
+    # Esconde a barra lateral na tela de login
     st.markdown(
         """
         <style>
@@ -78,11 +100,10 @@ def render_login(client) -> bool:
                 st.error(result["message"])
                 return False
 
-            # SUCESSO! 
-            # 1. Coloca o Ingresso na URL do navegador
+            # Coloca na URL
             st.query_params["token"] = result["token"]
 
-            # 2. Preenche a gaveta da sessão atual
+            # Coloca na Gaveta
             st.session_state["authenticated"]        = True
             st.session_state["user_email"]           = email
             st.session_state["user_name"]            = result["display_name"]
