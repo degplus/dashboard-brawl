@@ -51,13 +51,24 @@ def check_existing_session(client) -> bool:
     return True
 
 # ============================================================
-# RENDERIZA O FORMULÁRIO DE LOGIN
+# RENDER LOGIN FORM
 # ============================================================
 def render_login(client) -> bool:
     """
-    Exibe a tela de login.
-    Retorna True quando o login for bem-sucedido.
+    Displays the login screen.
+    Returns True when login is successful.
     """
+    # 🔒 INJECTED CSS: Hides the sidebar and hamburger menu on the login screen
+    st.markdown(
+        """
+        <style>
+            [data-testid="stSidebar"] {display: none !important;}
+            [data-testid="collapsedControl"] {display: none !important;}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.image("assets/logo.png", use_container_width=True)
@@ -65,33 +76,33 @@ def render_login(client) -> bool:
         st.markdown("---")
 
         with st.form("login_form"):
-            email    = st.text_input("📧 Email", placeholder="seu@email.com")
-            password = st.text_input("🔑 Senha", type="password")
-            submit   = st.form_submit_button("Entrar", use_container_width=True, type="primary")
+            email    = st.text_input("📧 Email", placeholder="your@email.com")
+            password = st.text_input("🔑 Password", type="password")
+            submit   = st.form_submit_button("Sign In", use_container_width=True, type="primary")
 
         if submit:
             if not email or not password:
-                st.error("Preencha email e senha.")
+                st.error("Please enter both email and password.")
                 return False
 
-            with st.spinner("Verificando..."):
+            with st.spinner("Verifying credentials..."):
                 result = do_login(client, email, password)
 
             if not result["success"]:
                 st.error(result["message"])
                 return False
 
-            # Salva token no cookie do navegador
+            # Save token to browser cookie
             set_token(result["token"])
 
-            # Popula session_state
+            # Populate session_state
             st.session_state["authenticated"]        = True
             st.session_state["user_email"]           = email
             st.session_state["user_name"]            = result["display_name"]
             st.session_state["must_change_password"] = result["must_change_password"]
             st.session_state["session_token"]        = result["token"]
 
-            st.success("Login realizado!")
+            st.success("Login successful!")
             st.rerun()
 
     return False

@@ -15,9 +15,31 @@ st.set_page_config(
     layout="wide"
 )
 
-# if not st.session_state.get("authentication_status"):
-#     st.warning("🔒 Please login on the Overview page.")
-#     st.stop()
+# ============================================================
+# BIGQUERY CLIENT & AUTHENTICATION GUARD
+# ============================================================
+from google.oauth2 import service_account
+from google.cloud import bigquery
+from login import check_existing_session
+
+@st.cache_resource
+def get_bq_client():
+    project_id = st.secrets.get("gcp_project", "brawl-sandbox")
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"]
+    )
+    return bigquery.Client(credentials=credentials, project=project_id)
+
+client = get_bq_client()
+
+# Force redirect to Login screen if not logged in
+if not check_existing_session(client):
+    st.switch_page("Overview.py")
+
+st.logo("assets/logo.png", icon_image="assets/logo.png")
+
+# O código original continua abaixo...
+with st.sidebar:
 
 st.logo("assets/logo.png", icon_image="assets/logo.png")
 

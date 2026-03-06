@@ -32,9 +32,18 @@ def get_bq_client():
     return bigquery.Client(credentials=credentials, project=project_id)
 
 client = get_bq_client()
-# if not st.session_state.get("authentication_status"):
-#     st.warning("🔒 Please login on the Overview page.")
-#     st.stop()
+# ============================================================
+# 🔐 AUTHENTICATION GUARD
+# ============================================================
+from login import check_existing_session
+
+# If there is no valid session, force redirect to Overview (Login Screen)
+if not check_existing_session(client):
+    st.switch_page("Overview.py")
+
+# O código original continua abaixo...
+with st.sidebar:
+    st.image("assets/logo.png", use_container_width=True)
 
 with st.sidebar:
     st.image("assets/logo.png", use_container_width=True)

@@ -1,16 +1,32 @@
 import streamlit as st
-from auth import change_password, validate_token
-from login import get_token, clear_token
+from auth import change_password
+from login import check_existing_session
+from google.oauth2 import service_account
+from google.cloud import bigquery
 
 st.set_page_config(page_title="Change Password — DegStats", page_icon="🔑", layout="centered")
 
 # ============================================================
-# GUARD — must be logged in
+# BQ CLIENT (Rádio de comunicação com a base de dados)
 # ============================================================
-token = get_token()
-if not token:
-    st.error("Session not found. Please log in again.")
-    st.stop()
+@st.cache_resource
+def get_bq_client():
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"]
+    )
+    return bigquery.Client(
+        credentials=credentials,
+        project=st.secrets.get("gcp_project", "brawl-sandbox")
+    )
+
+client = get_bq_client()
+
+# ============================================================
+# GUARD — must be logged in (Segurança da porta)
+# ============================================================
+# Se não estiver logado, chuta para a tela de login
+if not check_existing_session(client):
+    st.switch_page("Overview.py")
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
@@ -34,17 +50,9 @@ with col2:
         elif new_password != confirm:
             st.error("Passwords do not match.")
         else:
-            from google.oauth2 import service_account
-            from google.cloud import bigquery
-
-            credentials = service_account.Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"]
-            )
-            client = bigquery.Client(
-                credentials=credentials,
-                project=st.secrets.get("gcp_project", "brawl-sandbox")
-            )
-
+            else:
+            # Apagamos aquelas linhas de import e credentials que ficavam aqui, 
+            # pois agora o 'client' já existe desde o começo do arquivo!
             change_password(client, st.session_state["user_email"], new_password)
             st.session_state["must_change_password"] = False
             st.success("✅ Password updated successfully!")

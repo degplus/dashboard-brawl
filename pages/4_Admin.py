@@ -8,18 +8,6 @@ from login import get_token
 st.set_page_config(page_title="Admin Panel — DegStats", page_icon="🛠️", layout="centered")
 
 # ============================================================
-# GUARD — admin only
-# ============================================================
-token = get_token()
-if not token:
-    st.error("Session not found. Please log in again.")
-    st.stop()
-
-if st.session_state.get("user_email") != "android.deg@gmail.com":
-    st.error("⛔ Access restricted to administrators.")
-    st.stop()
-
-# ============================================================
 # BQ CLIENT
 # ============================================================
 @st.cache_resource
@@ -33,6 +21,19 @@ def get_client():
     )
 
 client = get_client()
+
+# ============================================================
+# GUARD — admin only
+# ============================================================
+from login import check_existing_session
+
+# Force redirect to Login screen if not logged in
+if not check_existing_session(client):
+    st.switch_page("Overview.py")
+
+if st.session_state.get("user_email") != "android.deg@gmail.com":
+    st.error("⛔ Access restricted to administrators.")
+    st.stop()
 
 # ============================================================
 # LOAD USERS
