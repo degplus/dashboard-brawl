@@ -60,7 +60,7 @@ st.markdown("---")
 tab1, tab2 = st.tabs(["👥 Users", "➕ Add User"])
 
 # ============================================================
-# TAB 1 — USER LIST
+# TAB 1 — USER LIST (Agora com Busca e Filtros!)
 # ============================================================
 with tab1:
     st.subheader("Registered Users")
@@ -69,30 +69,66 @@ with tab1:
     if not users:
         st.info("No users registered yet.")
     else:
+        # 1. Cria as colunas para os filtros
+        col_search, col_filter = st.columns([2, 1])
+        with col_search:
+            search_term = st.text_input("🔍 Search Name or Email", placeholder="Type to search...")
+        with col_filter:
+            status_filter = st.selectbox("Status Filter", ["All", "Active", "Inactive"])
+
+        # 2. Lógica de Filtragem
+        filtered_users = []
         for u in users:
-            with st.expander(f"{'✅' if u['is_active'] else '❌'}  {u['display_name']}  —  {u['email']}"):
-                col1, col2 = st.columns(2)
+            match_text = True
+            match_status = True
 
-                with col1:
-                    new_status = st.toggle(
-                        "Active",
-                        value=bool(u["is_active"]),
-                        key=f"active_{u['email']}"
-                    )
-                    if new_status != u["is_active"]:
-                        with st.spinner("Updating..."):
-                            set_user_active(client, u["email"], new_status)
-                            st.cache_data.clear()
-                        st.rerun()
+            # Filtra pelo texto (ignora maiúsculas/minúsculas)
+            if search_term:
+                term = search_term.lower()
+                if term not in u["email"].lower() and term not in u["display_name"].lower():
+                    match_text = False
+            
+            # Filtra pelo status
+            if status_filter == "Active" and not u["is_active"]:
+                match_status = False
+            elif status_filter == "Inactive" and u["is_active"]:
+                match_status = False
 
-                with col2:
-                    if st.button("🔄 Reset Password", key=f"reset_{u['email']}"):
-                        with st.spinner("Resetting..."):
-                            temp = generate_temp_password()
-                            reset_password(client, u["email"], temp)
-                            send_reset_email(u["email"], u["display_name"], temp)
-                            st.cache_data.clear()
-                        st.success(f"✅ Password reset and sent to {u['email']}")
+            # Se passou nos dois filtros, adiciona na lista para mostrar
+            if match_text and match_status:
+                filtered_users.append(u)
+
+        st.markdown(f"*Showing **{len(filtered_users)}** user(s)*")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 3. Renderiza a lista filtrada
+        if not filtered_users:
+            st.warning("No users found matching your filters.")
+        else:
+            for u in filtered_users:
+                with st.expander(f"{'✅' if u['is_active'] else '❌'}  {u['display_name']}  —  {u['email']}"):
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        new_status = st.toggle(
+                            "Active Account",
+                            value=bool(u["is_active"]),
+                            key=f"active_{u['email']}"
+                        )
+                        if new_status != u["is_active"]:
+                            with st.spinner("Updating status..."):
+                                set_user_active(client, u["email"], new_status)
+                                st.cache_data.clear()
+                            st.rerun()
+
+                    with col2:
+                        if st.button("🔄 Reset Password", key=f"reset_{u['email']}"):
+                            with st.spinner("Resetting password..."):
+                                temp = generate_temp_password()
+                                reset_password(client, u["email"], temp)
+                                send_reset_email(u["email"], u["display_name"], temp)
+                                st.cache_data.clear()
+                            st.success(f"✅ Password reset and sent to {u['email']}")
 
 # ============================================================
 # TAB 2 — ADD USER

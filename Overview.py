@@ -328,7 +328,7 @@ with st.sidebar:
 
     full_squad_only = st.toggle(
         "👥 Full Squad Only",
-        value=False,
+        value=True,
         help="On: Shows only games where all 3 tracked players from the same team played together."
     )
 
