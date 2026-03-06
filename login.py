@@ -1,42 +1,39 @@
 import streamlit as st
 import extra_streamlit_components as stx
 import datetime
+import time
 from auth import do_login, validate_token
 
 COOKIE_NAME = "degstats_token"
 
 # ============================================================
-# GERENCIADOR DE COOKIES (ISOLADO E SEGURO)
+# GERENCIADOR DE COOKIES (Sem cache, mas com Key fixa)
 # ============================================================
-def get_cookie_manager():
-    return stx.CookieManager()
-
-cookie_manager = get_cookie_manager()
+# O 'key' fixo impede que o Streamlit crie múltiplos mensageiros
+cookie_manager = stx.CookieManager(key="degstats_cookie_manager")
 
 def clear_token():
     cookie_manager.delete(COOKIE_NAME)
+    time.sleep(0.5) # Dá tempo do navegador apagar
 
 # ============================================================
-# VERIFICA SESSÃO (Busca na gaveta, depois na carteira/cookie)
+# VERIFICA SESSÃO
 # ============================================================
 def check_existing_session(client) -> bool:
-    # 1. Tenta achar o crachá rápido na gaveta da aba atual
     if st.session_state.get("authenticated"):
         return True
 
-    # 2. Se não tem na gaveta, procura na carteira (Cookie do navegador)
+    # Como o CookieManager roda via React/Javascript por trás dos panos, 
+    # ele precisa ser lido com segurança.
     token = cookie_manager.get(COOKIE_NAME)
     if not token:
         return False
 
-    # 3. Achou o cookie! Vamos validar no banco para ver se ainda é válido
     user = validate_token(client, token)
     if not user:
-        # Se o token expirou no banco, joga o cookie fora
-        cookie_manager.delete(COOKIE_NAME)
+        clear_token()
         return False
 
-    # 4. Sucesso! Põe na gaveta para o sistema ficar rápido
     st.session_state["authenticated"]        = True
     st.session_state["user_email"]           = user["email"]
     st.session_state["user_name"]            = user["display_name"]
@@ -48,7 +45,6 @@ def check_existing_session(client) -> bool:
 # RENDER LOGIN FORM
 # ============================================================
 def render_login(client) -> bool:
-    # Esconde a barra lateral
     st.markdown(
         """
         <style>
@@ -82,17 +78,23 @@ def render_login(client) -> bool:
                 st.error(result["message"])
                 return False
 
-            # SALVA O COOKIE NO NAVEGADOR (Validade de 1 dia)
+            # 1. Entrega o crachá para o mensageiro (Validade de 1 dia)
             expires = datetime.datetime.now() + datetime.timedelta(days=1)
             cookie_manager.set(COOKIE_NAME, result["token"], expires_at=expires)
 
+            # 2. GUARDA NA GAVETA (Imediato)
             st.session_state["authenticated"]        = True
             st.session_state["user_email"]           = email
             st.session_state["user_name"]            = result["display_name"]
             st.session_state["must_change_password"] = result["must_change_password"]
             st.session_state["session_token"]        = result["token"]
 
-            st.success("Login successful!")
+            st.success("Login successful! Redirecting...")
+            
+            # 3. PAUSA ESTRATÉGICA (Dá tempo do mensageiro chegar no navegador)
+            time.sleep(1)
+            
+            # 4. Agora sim recarrega a página!
             st.rerun()
 
     return False
