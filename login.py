@@ -8,7 +8,6 @@ COOKIE_NAME = "degstats_token"
 # ============================================================
 # GERENCIADOR DE COOKIES (ISOLADO E SEGURO)
 # ============================================================
-@st.cache_resource(experimental_allow_widgets=True)
 def get_cookie_manager():
     return stx.CookieManager()
 
