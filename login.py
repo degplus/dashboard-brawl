@@ -1,5 +1,6 @@
 import streamlit as st
-from auth import do_login, validate_token
+from auth import do_login, validate_token, get_user, reset_password
+from email_sender import generate_temp_password, send_reset_email
 
 # ============================================================
 # VERIFICA SESSÃO (À prova de F5 e Navegação)
@@ -112,5 +113,35 @@ def render_login(client) -> bool:
 
             st.success("Login successful!")
             st.rerun()
+        # ============================================================
+        # NOVO: FORGOT PASSWORD (Adicione logo abaixo do fluxo de login)
+        # ============================================================
+        st.markdown("---")
+        with st.expander("Forgot Password? 🔑"):
+            st.markdown("Enter your registered email to receive a temporary password.")
+            
+            with st.form("forgot_password_form"):
+                forgot_email = st.text_input("Email Address")
+                submit_forgot = st.form_submit_button("Send Reset Email")
+                
+                if submit_forgot:
+                    if not forgot_email:
+                        st.error("Please enter an email address.")
+                    else:
+                        with st.spinner("Processing..."):
+                            # 1. Checa se o usuário existe na base e está ativo
+                            user = get_user(client, forgot_email)
+                            
+                            if user and user.get("is_active"):
+                                # 2. Gera a senha provisória
+                                temp_pw = generate_temp_password()
+                                # 3. Atualiza o banco (Sua função reset_password já seta must_change_password=True!)
+                                reset_password(client, forgot_email, temp_pw)
+                                # 4. Dispara o email
+                                send_reset_email(forgot_email, user.get("display_name", "Player"), temp_pw)
+                            
+                            # Dica de Segurança: Sempre mostramos a mesma mensagem de sucesso, 
+                            # mesmo se o email não existir, para evitar que hackers descubram quem tem conta.
+                            st.success("✅ If this email is registered and active, a recovery link was sent to your inbox.")
 
     return False
