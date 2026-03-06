@@ -1,46 +1,43 @@
 import streamlit as st
+import extra_streamlit_components as stx
+import datetime
 from auth import do_login, validate_token
-from streamlit_cookies_controller import CookieController
 
 COOKIE_NAME = "degstats_token"
 
 # ============================================================
-# GERENCIADOR DE COOKIES (ISOLADO POR USUÁRIO)
+# GERENCIADOR DE COOKIES (ISOLADO E SEGURO)
 # ============================================================
-def get_controller():
-    # Isso garante que cada aba do navegador tenha seu próprio leitor de cookies
-    if "cookie_controller" not in st.session_state:
-        st.session_state["cookie_controller"] = CookieController()
-    return st.session_state["cookie_controller"]
+@st.cache_resource(experimental_allow_widgets=True)
+def get_cookie_manager():
+    return stx.CookieManager()
 
-# ============================================================
-# FUNÇÕES DE TOKEN (Usando a gaveta particular)
-# ============================================================
-def get_token() -> str | None:
-    return get_controller().get(COOKIE_NAME)
-
-def set_token(token: str):
-    get_controller().set(COOKIE_NAME, token, max_age=86400)  # 1 dia
+cookie_manager = get_cookie_manager()
 
 def clear_token():
-    get_controller().remove(COOKIE_NAME)
+    cookie_manager.delete(COOKIE_NAME)
 
 # ============================================================
-# VERIFICA SESSÃO
+# VERIFICA SESSÃO (Busca na gaveta, depois na carteira/cookie)
 # ============================================================
 def check_existing_session(client) -> bool:
+    # 1. Tenta achar o crachá rápido na gaveta da aba atual
     if st.session_state.get("authenticated"):
         return True
 
-    token = get_token()
+    # 2. Se não tem na gaveta, procura na carteira (Cookie do navegador)
+    token = cookie_manager.get(COOKIE_NAME)
     if not token:
         return False
 
+    # 3. Achou o cookie! Vamos validar no banco para ver se ainda é válido
     user = validate_token(client, token)
     if not user:
-        clear_token()
+        # Se o token expirou no banco, joga o cookie fora
+        cookie_manager.delete(COOKIE_NAME)
         return False
 
+    # 4. Sucesso! Põe na gaveta para o sistema ficar rápido
     st.session_state["authenticated"]        = True
     st.session_state["user_email"]           = user["email"]
     st.session_state["user_name"]            = user["display_name"]
@@ -86,7 +83,9 @@ def render_login(client) -> bool:
                 st.error(result["message"])
                 return False
 
-            set_token(result["token"])
+            # SALVA O COOKIE NO NAVEGADOR (Validade de 1 dia)
+            expires = datetime.datetime.now() + datetime.timedelta(days=1)
+            cookie_manager.set(COOKIE_NAME, result["token"], expires_at=expires)
 
             st.session_state["authenticated"]        = True
             st.session_state["user_email"]           = email

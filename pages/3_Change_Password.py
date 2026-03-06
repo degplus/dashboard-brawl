@@ -1,11 +1,11 @@
-# pages/3_Change_Password.py
 import streamlit as st
 from auth import change_password
 from google.oauth2 import service_account
 from google.cloud import bigquery
+from login import check_existing_session
 
 # ============================================================
-# 1. PAGE CONFIG (Sempre o primeiro)
+# 1. PAGE CONFIG
 # ============================================================
 st.set_page_config(page_title="Change Password — DegStats", page_icon="🔑", layout="centered")
 
@@ -25,25 +25,19 @@ def get_bq_client():
 client = get_bq_client()
 
 # ============================================================
-# 3. GUARD — Segurança (Verifica se está logado)
+# 3. GUARD — Segurança
 # ============================================================
-from login import check_existing_session
-
 if not check_existing_session(client):
     st.switch_page("Overview.py")
 
 # ============================================================
-# 4. INTERFACE VISUAL (Só aparece se o segurança liberou)
+# 4. INTERFACE VISUAL E LÓGICA
 # ============================================================
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image("assets/logo.png", use_container_width=True)
     st.markdown("### 🔑 Set New Password")
     st.markdown("---")
-    
-    # Daqui para baixo, o seu código original continua igualzinho:
-    # if not st.session_state.get("must_change_password"):
-    # ...
 
     if not st.session_state.get("must_change_password"):
         st.info("Your password is already set. You can change it below if you wish.")
@@ -61,9 +55,6 @@ with col2:
         elif new_password != confirm:
             st.error("Passwords do not match.")
         else:
-            else:
-            # Apagamos aquelas linhas de import e credentials que ficavam aqui, 
-            # pois agora o 'client' já existe desde o começo do arquivo!
             change_password(client, st.session_state["user_email"], new_password)
             st.session_state["must_change_password"] = False
             st.success("✅ Password updated successfully!")
