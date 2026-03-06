@@ -41,14 +41,14 @@ from login import check_existing_session, apply_ui_permissions
 if not check_existing_session(client):
     st.switch_page("Overview.py")
 
-# 2. O Detector de Metais (NOVO AQUI): Bloqueia se precisar trocar a senha
+# 2. A Camuflagem: Esconde o menu Admin de quem não é o chefe (VEM ANTES DO STOP!)
+apply_ui_permissions()
+
+# 3. O Detector de Metais: Bloqueia se precisar trocar a senha
 if st.session_state.get("must_change_password"):
     st.warning("⚠️ You need to set a new password before continuing.")
     st.page_link("pages/3_Change_Password.py", label="👉 Click here to set your password")
     st.stop()
-
-# 3. A Camuflagem: Esconde o menu Admin se não for o chefe
-apply_ui_permissions()
 
 
 # ============================================================
