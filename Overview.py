@@ -1351,11 +1351,13 @@ else:
             selection_mode="single-row"
         )
 
-        sel_game = ev_match.selection.rows
-        if sel_game:
-            row = df_matchups.iloc[sel_game[0]]
-            st.markdown("---")
-            render_draft(int(row["game"]), row["map"], row["map_img"], row["battletime"])
+# 🛡️ TRAVA DE SEGURANÇA: Só tenta abrir o pacote se ele existir!
+        if 'ev_match' in locals():
+            sel_game = ev_match.selection.rows
+            if sel_game:
+                row = df_matchups.iloc[sel_game[0]]
+                st.markdown("---")
+                render_draft(int(row["game"]), row["map"], row["map_img"], row["battletime"])
 
 st.markdown("---")
 
