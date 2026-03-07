@@ -534,15 +534,17 @@ with st.sidebar:
 where_main, params_main = build_where(use_datetime=True)
 
 # ============================================================
-# DRAFT VIEWER HELPER
+# DRAFT VIEWER HELPER (Substitua a função inteira)
 # ============================================================
 def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
     df_draft = fetch_data("""
-        SELECT team_num, player_name, player_team, player_result,
-               brawler_name, brawler_img, star_player_name
-        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-        WHERE game = @game_id
-        ORDER BY team_num, player_place
+        SELECT v.team_num, v.player_name, v.player_team, v.player_result,
+               v.brawler_name, v.brawler_img, v.star_player_name,
+               t.team_logo_url AS badge -- NOVO: Traz o brasão do time
+        FROM `brawl-sandbox.brawl_stats.vw_battles_python` v
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` t ON v.player_team = t.team
+        WHERE v.game = @game_id
+        ORDER BY v.team_num, v.player_place
     """, json.dumps([{"name": "game_id", "bq_type": "INT64", "value": game_id}]))
 
     if df_draft.empty:
@@ -552,21 +554,27 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
     blue = df_draft[df_draft["team_num"] == 1].reset_index(drop=True)
     red  = df_draft[df_draft["team_num"] == 2].reset_index(drop=True)
 
-    star_player    = df_draft["star_player_name"].iloc[0]
+    star_player    = df_draft["star_player_name"].iloc[0] if not df_draft.empty else ""
     blue_result    = blue["player_result"].iloc[0] if not blue.empty else ""
     red_result     = red["player_result"].iloc[0]  if not red.empty  else ""
     blue_team_name = blue["player_team"].iloc[0]   if not blue.empty else "Blue"
     red_team_name  = red["player_team"].iloc[0]    if not red.empty  else "Red"
+    
+    # NOVO: Separa a imagem dos times
+    blue_badge     = blue["badge"].iloc[0] if not blue.empty else None
+    red_badge      = red["badge"].iloc[0]  if not red.empty  else None
+
     blue_emoji     = "🏆" if blue_result == "victory" else "💀"
     red_emoji      = "🏆" if red_result  == "victory" else "💀"
 
     col_blue, col_center, col_red = st.columns([4, 2, 4])
 
     with col_blue:
-        st.markdown(
-            f"<h3 style='color:#4A90D9;text-align:center'>{blue_team_name}</h3>",
-            unsafe_allow_html=True
-        )
+        # NOVO: Exibe o brasão centralizado se existir
+        if blue_badge:
+            st.markdown(f"<div style='text-align:center'><img src='{blue_badge}' width='50'></div>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:#4A90D9;text-align:center'>{blue_team_name}</h3>", unsafe_allow_html=True)
+        
         h1, h2, h3 = st.columns(3)
         h1.markdown("**Team**")
         h2.markdown("**Player**")
@@ -578,10 +586,7 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
             if row["brawler_img"]:
                 c3.image(row["brawler_img"], width=48)
             c3.caption(row["brawler_name"])
-        st.markdown(
-            f"<h4 style='text-align:center'>{blue_emoji} {'VICTORY' if blue_result == 'victory' else 'DEFEAT'}</h4>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<h4 style='text-align:center'>{blue_emoji} {'VICTORY' if blue_result == 'victory' else 'DEFEAT'}</h4>", unsafe_allow_html=True)
 
     with col_center:
         st.markdown(f"<h4 style='text-align:center'>{map_name}</h4>", unsafe_allow_html=True)
@@ -591,10 +596,11 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
         st.caption(f"{bt}")
 
     with col_red:
-        st.markdown(
-            f"<h3 style='color:#D94A4A;text-align:center'>{red_team_name}</h3>",
-            unsafe_allow_html=True
-        )
+        # NOVO: Exibe o brasão centralizado se existir
+        if red_badge:
+            st.markdown(f"<div style='text-align:center'><img src='{red_badge}' width='50'></div>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:#D94A4A;text-align:center'>{red_team_name}</h3>", unsafe_allow_html=True)
+        
         h1, h2, h3 = st.columns(3)
         h1.markdown("**Pick**")
         h2.markdown("**Player**")
@@ -606,10 +612,7 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
             c1.caption(row["brawler_name"])
             c2.write(row["player_name"])
             c3.write(row["player_team"] or "-")
-        st.markdown(
-            f"<h4 style='text-align:center'>{red_emoji} {'VICTORY' if red_result == 'victory' else 'DEFEAT'}</h4>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<h4 style='text-align:center'>{red_emoji} {'VICTORY' if red_result == 'victory' else 'DEFEAT'}</h4>", unsafe_allow_html=True)
 
 # ============================================================
 # KPIs
@@ -1208,9 +1211,6 @@ df_teams = fetch_data(f"""
 if df_teams.empty:
     st.warning("No data found for the selected filters.")
 else:
-    # NOVO: Converte a URL da imagem para não dar erro no navegador
-    df_teams["badge"] = convert_img_column(df_teams["badge"])
-
     st.dataframe(
         df_teams,
         use_container_width=True,
@@ -1296,6 +1296,9 @@ else:
         {"name": "h2h_team", "bq_type": "STRING", "value": h2h_team}
     ])
 
+    # ============================================================
+    # Atualize a query df_h2h dentro de HEAD TO HEAD
+    # ============================================================
     df_h2h = fetch_data(f"""
         WITH my_games AS (
             SELECT DISTINCT game, player_team AS my_team, player_result AS my_result
@@ -1308,6 +1311,7 @@ else:
             WHERE player_team != @h2h_team AND player_team IS NOT NULL
         )
         SELECT
+            MAX(t.team_logo_url) AS badge, -- NOVO: Escudo do Oponente
             og.opp_team AS opponent,
             COUNT(DISTINCT mg.game) AS games,
             COUNT(DISTINCT CASE WHEN mg.my_result = 'victory' THEN mg.game END) AS wins,
@@ -1318,6 +1322,7 @@ else:
             ) AS win_rate
         FROM my_games mg
         JOIN opponent_games og ON mg.game = og.game
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` t ON og.opp_team = t.team -- NOVO: JOIN
         GROUP BY og.opp_team
         ORDER BY games DESC
     """, params_h2h)
@@ -1328,11 +1333,13 @@ else:
         st.subheader(f"{h2h_team} — Matchup History")
         st.caption("Click a row to see the game history against that opponent")
 
+        # Atualize o dataframe para exibir a coluna 'badge'
         ev_h2h = st.dataframe(
             df_h2h,
             use_container_width=True,
-            column_order=["opponent", "games", "wins", "losses", "win_rate"],
+            column_order=["badge", "opponent", "games", "wins", "losses", "win_rate"], # NOVO
             column_config={
+                "badge":    st.column_config.ImageColumn(""), # NOVO: Renderiza a imagem
                 "opponent": st.column_config.TextColumn("Opponent"),
                 "games":    st.column_config.NumberColumn("Games",    format="%d"),
                 "wins":     st.column_config.NumberColumn("Wins",     format="%d"),
@@ -1344,108 +1351,11 @@ else:
             selection_mode="single-row"
         )
 
-        sel_opp = ev_h2h.selection.rows
-        if sel_opp:
-            opp_name = df_h2h.iloc[sel_opp[0]]["opponent"]
-            
-            # --- NOVO: FUNÇÃO CALLBACK ---
-            # Essa função roda ANTES da página recarregar, evitando o erro
-            def apply_h2h_filter():
-                st.session_state["f_team"] = [h2h_team, opp_name]
-                st.session_state["h2h_toggle_active"] = True
-            # -----------------------------
-
-            st.info(f"Selecionado: **{opp_name}**")
-            
-            current_teams = st.session_state.get("f_team", [])
-            already_active = (
-                len(current_teams) == 2 and 
-                opp_name in current_teams and 
-                h2h_team in current_teams and 
-                st.session_state.get("h2h_toggle_active", False)
-            )
-
-            if not already_active:
-                def apply_h2h_filter():
-                    st.session_state["f_team"] = [h2h_team, opp_name]
-                    st.session_state["h2h_toggle_active"] = True
-
-                st.button(
-                    f"🌪️ Filter Dashboard: {h2h_team} vs {opp_name}", # <--- Traduzido aqui
-                    use_container_width=True,
-                    type="primary",
-                    on_click=apply_h2h_filter
-                )
-
-            params_matchup = json.dumps(base_params + [
-                {"name": "h2h_team", "bq_type": "STRING", "value": h2h_team},
-                {"name": "opp_name", "bq_type": "STRING", "value": opp_name},
-            ])
-
-            df_matchups = fetch_data(f"""
-                WITH my_games AS (
-                    SELECT DISTINCT game, player_team AS my_team, player_result AS my_result
-                    FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-                    WHERE {where_h2h} AND player_team = @h2h_team
-                ),
-                opp_games AS (
-                    SELECT DISTINCT game, player_team AS opp_team, player_result AS opp_result
-                    FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-                    WHERE player_team = @opp_name AND player_team IS NOT NULL
-                ),
-                joined AS (
-                    SELECT mg.game, mg.my_team, mg.my_result,
-                           og.opp_team, og.opp_result
-                    FROM my_games mg JOIN opp_games og ON mg.game = og.game
-                )
-                SELECT
-                    j.game,
-                    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', MAX(v.battle_time)) AS battletime,
-                    MAX(v.map)     AS map,
-                    MAX(v.map_img) AS map_img,
-                    MAX(v.mode)    AS mode,
-                    MAX(j.my_result)  AS my_result,
-                    MAX(j.opp_result) AS opp_result
-                FROM joined j
-                JOIN `brawl-sandbox.brawl_stats.vw_battles_python` v ON j.game = v.game
-                GROUP BY j.game
-                ORDER BY MAX(v.battle_time) DESC
-            """, params_matchup)
-
-            if not df_matchups.empty:
-                st.markdown("---")
-                st.subheader(f"{h2h_team} vs {opp_name}")
-                st.caption("Click a row to view the draft")
-
-                df_matchups["my_result_show"]  = df_matchups["my_result"].apply(
-                    lambda x: "🏆 WIN" if x == "victory" else "💀 LOSS"
-                )
-                df_matchups["opp_result_show"] = df_matchups["opp_result"].apply(
-                    lambda x: "🏆 WIN" if x == "victory" else "💀 LOSS"
-                )
-
-                ev_match = st.dataframe(
-                    df_matchups,
-                    use_container_width=True,
-                    column_order=["game", "battletime", "map", "mode", "my_result_show", "opp_result_show"],
-                    column_config={
-                        "game":            st.column_config.NumberColumn("Game", format="%d"),
-                        "battletime":      st.column_config.TextColumn("Date / Time"),
-                        "map":             st.column_config.TextColumn("Map"),
-                        "mode":            st.column_config.TextColumn("Mode"),
-                        "my_result_show":  st.column_config.TextColumn(h2h_team),
-                        "opp_result_show": st.column_config.TextColumn(opp_name),
-                    },
-                    hide_index=True,
-                    on_select="rerun",
-                    selection_mode="single-row"
-                )
-
-                sel_game = ev_match.selection.rows
-                if sel_game:
-                    row = df_matchups.iloc[sel_game[0]]
-                    st.markdown("---")
-                    render_draft(int(row["game"]), row["map"], row["map_img"], row["battletime"])
+        sel_game = ev_match.selection.rows
+        if sel_game:
+            row = df_matchups.iloc[sel_game[0]]
+            st.markdown("---")
+            render_draft(int(row["game"]), row["map"], row["map_img"], row["battletime"])
 
 st.markdown("---")
 
