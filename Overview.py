@@ -1188,6 +1188,7 @@ df_teams = fetch_data(f"""
         GROUP BY player_team
     )
     SELECT
+        MAX(t.team_logo_url) AS badge, -- NOVO: Buscando o link do brasão
         f.player_team AS team,
         COUNT(DISTINCT f.game) AS games,
         COUNT(DISTINCT CASE WHEN f.player_result = 'victory' THEN f.game END) AS wins,
@@ -1199,6 +1200,7 @@ df_teams = fetch_data(f"""
         tb.top_brawlers
     FROM filtered f
     LEFT JOIN top_brawlers tb ON f.player_team = tb.player_team
+    LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` t ON f.player_team = t.team -- NOVO: JOIN com a dim_teams
     GROUP BY f.player_team, tb.top_brawlers
     ORDER BY games DESC
 """, params_main)
@@ -1206,11 +1208,15 @@ df_teams = fetch_data(f"""
 if df_teams.empty:
     st.warning("No data found for the selected filters.")
 else:
+    # NOVO: Converte a URL da imagem para não dar erro no navegador
+    df_teams["badge"] = convert_img_column(df_teams["badge"])
+
     st.dataframe(
         df_teams,
         use_container_width=True,
-        column_order=["team", "games", "wins", "losses", "win_rate", "top_brawlers"],
+        column_order=["badge", "team", "games", "wins", "losses", "win_rate", "top_brawlers"],
         column_config={
+            "badge":        st.column_config.ImageColumn(""), # NOVO: Diz pro Streamlit que é imagem!
             "team":         st.column_config.TextColumn("Team"),
             "games":        st.column_config.NumberColumn("Games",      format="%d"),
             "wins":         st.column_config.NumberColumn("Wins",       format="%d"),
