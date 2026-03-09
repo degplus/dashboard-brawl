@@ -22,6 +22,7 @@ USERS_SCHEMA = [
     bigquery.SchemaField("is_active", "BOOLEAN"),
     bigquery.SchemaField("must_change_password", "BOOLEAN"),
     bigquery.SchemaField("created_at", "TIMESTAMP"),
+    bigquery.SchemaField("updated_at", "TIMESTAMP"), # <--- FALTAVA ESSA AQUI!
     bigquery.SchemaField("expiration_date", "DATE"),
 ]
 
