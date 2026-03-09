@@ -15,14 +15,14 @@ SESSION_DURATION_HOURS = 24
 # ============================================================
 # SCHEMA DEFINITIONS
 # ============================================================
-USERS_SCHEMA = [
-    bigquery.SchemaField("email",                "STRING",    mode="REQUIRED"),
-    bigquery.SchemaField("password_hash",        "STRING",    mode="REQUIRED"),
-    bigquery.SchemaField("display_name",         "STRING",    mode="NULLABLE"),
-    bigquery.SchemaField("is_active",            "BOOL",      mode="NULLABLE"),
-    bigquery.SchemaField("must_change_password", "BOOL",      mode="NULLABLE"),
-    bigquery.SchemaField("created_at",           "TIMESTAMP", mode="NULLABLE"),
-    bigquery.SchemaField("updated_at",           "TIMESTAMP", mode="NULLABLE"),
+UUSERS_SCHEMA = [
+    bigquery.SchemaField("email", "STRING"),
+    bigquery.SchemaField("display_name", "STRING"),
+    bigquery.SchemaField("password_hash", "STRING"),
+    bigquery.SchemaField("is_active", "BOOLEAN"),
+    bigquery.SchemaField("must_change_password", "BOOLEAN"),
+    bigquery.SchemaField("created_at", "TIMESTAMP"),
+    bigquery.SchemaField("expiration_date", "DATE"),
 ]
 
 
