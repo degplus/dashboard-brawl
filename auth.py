@@ -15,7 +15,7 @@ SESSION_DURATION_HOURS = 24
 # ============================================================
 # SCHEMA DEFINITIONS
 # ============================================================
-UUSERS_SCHEMA = [
+USERS_SCHEMA = [
     bigquery.SchemaField("email", "STRING"),
     bigquery.SchemaField("display_name", "STRING"),
     bigquery.SchemaField("password_hash", "STRING"),
