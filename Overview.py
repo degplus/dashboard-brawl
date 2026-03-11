@@ -133,7 +133,7 @@ def get_cache_load_time():
 # ============================================================
 # FETCH DATA
 # ============================================================
-@st.cache_data(ttl=TTL, persist="disk")
+@st.cache_data(ttl=TTL)
 def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
     bq_params = []
     if params_json:
@@ -176,7 +176,7 @@ def convert_img_column(series: pd.Series) -> pd.Series:
 # ============================================================
 # DIM FILTERS
 # ============================================================
-@st.cache_data(ttl=TTL, persist="disk")
+@st.cache_data(ttl=TTL)
 def load_dim_filters() -> pd.DataFrame:
     df = fetch_data("SELECT * FROM `brawl-sandbox.brawl_stats.dim_filters`")
     df["battle_date"] = pd.to_datetime(df["battle_date"]).dt.date
@@ -185,7 +185,7 @@ def load_dim_filters() -> pd.DataFrame:
 # ============================================================
 # PLAYER NAMES (active only)
 # ============================================================
-@st.cache_data(ttl=TTL, persist="disk")
+@st.cache_data(ttl=TTL)
 def load_player_names() -> dict:
     df = fetch_data("""
         SELECT v.player_tag, v.player_name AS display_name
@@ -206,7 +206,7 @@ def load_player_names() -> dict:
 # ============================================================
 # ALL PLAYER NAMES
 # ============================================================
-@st.cache_data(ttl=TTL, persist="disk")
+@st.cache_data(ttl=TTL)
 def load_all_player_names() -> dict:
     df = fetch_data("""
         SELECT player_tag,
