@@ -1118,10 +1118,13 @@ else:
 if df_players.empty:
     st.warning("No data found for the selected filters.")
 else:
+    # ✂️ O TRUQUE DO CORTE: Selecionamos apenas as colunas que importam
+    colunas_visiveis_players = ["player_img", "player_name", "team", "games", "wins", "losses", "win_rate"]
+    df_players_view = df_players[colunas_visiveis_players]
+
     st.dataframe(
-        df_players,
+        df_players_view, # Passamos a versão cortada
         use_container_width=True,
-        column_order=["player_img", "player_name", "team", "games", "wins", "losses", "win_rate"],
         column_config={
             "player_img":  st.column_config.ImageColumn(""),
             "player_name": st.column_config.TextColumn("Player"),
