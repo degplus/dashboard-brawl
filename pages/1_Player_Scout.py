@@ -92,16 +92,6 @@ def img_to_base64(url: str) -> str | None:
     except Exception:
         return None
 
-def convert_img_column(series: pd.Series) -> pd.Series:
-    urls = series.tolist()
-    results = {}
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(img_to_base64, url): i for i, url in enumerate(urls)}
-        for future in as_completed(futures):
-            i = futures[future]
-            results[i] = future.result()
-    return pd.Series([results[i] for i in range(len(urls))])
-
 # ============================================================
 # BRAWL STARS API — PLAYER PROFILE (via bsproxy)
 # ============================================================
@@ -303,9 +293,9 @@ p_img_df = fetch_data("""
 card_img, card_info = st.columns([1, 7])
 with card_img:
     if not p_img_df.empty and p_img_df["player_img"].iloc[0]:
-        b64 = img_to_base64(p_img_df["player_img"].iloc[0])
-        if b64:
-            st.image(b64, width=80)
+        # Exibe direto da URL do seu GitHub, sem converter!
+        st.image(p_img_df["player_img"].iloc[0], width=80)
+
 with card_info:
     st.markdown(
         f"{selected_name}&nbsp;"

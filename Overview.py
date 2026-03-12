@@ -146,7 +146,6 @@ def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
             bq_params.append(param_cls(p["name"], p["bq_type"], p["value"]))
     job_config = bigquery.QueryJobConfig(query_parameters=bq_params)
     return client.query(query, job_config=job_config).result().to_dataframe()
-
 # ============================================================
 # IMAGE → BASE64
 # ============================================================
@@ -172,7 +171,6 @@ def convert_img_column(series: pd.Series) -> pd.Series:
             i = futures[future]
             results[i] = future.result()
     return pd.Series([results[i] for i in range(len(urls))])
-
 # ============================================================
 # DIM FILTERS
 # ============================================================
@@ -1145,7 +1143,6 @@ else:
 if df_players.empty:
     st.warning("No data found for the selected filters.")
 else:
-    df_players["player_img"] = convert_img_column(df_players["player_img"])
     st.dataframe(
         df_players,
         use_container_width=True,
