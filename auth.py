@@ -1,6 +1,6 @@
 import bcrypt
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from google.cloud import bigquery
 
 # ============================================================
@@ -47,12 +47,13 @@ def _read_table(client: bigquery.Client, table_id: str) -> list[dict]:
 # HELPERS — WRITE TABLE (replaces entire table)
 # ============================================================
 def _write_table(client: bigquery.Client, table_id: str, rows: list[dict], schema: list):
-    # Serialize timestamps to ISO string
+    # Serialize timestamps and dates to ISO string
     serialized = []
     for row in rows:
         r = {}
         for k, v in row.items():
-            r[k] = v.isoformat() if isinstance(v, datetime) else v
+            # NOVO: Agora verifica se é datetime OU date puro
+            r[k] = v.isoformat() if isinstance(v, (datetime, date)) else v
         serialized.append(r)
 
     job_config = bigquery.LoadJobConfig(
@@ -69,7 +70,8 @@ def _append_rows(client: bigquery.Client, table_id: str, rows: list[dict], schem
     for row in rows:
         r = {}
         for k, v in row.items():
-            r[k] = v.isoformat() if isinstance(v, datetime) else v
+            # NOVO: Agora verifica se é datetime OU date puro
+            r[k] = v.isoformat() if isinstance(v, (datetime, date)) else v
         serialized.append(r)
 
     job_config = bigquery.LoadJobConfig(
@@ -244,7 +246,7 @@ def delete_user(client: bigquery.Client, email: str):
     sessions = _read_table(client, TB_SESS)
     sessions = [s for s in sessions if s["email"].lower() != email.lower()]
     _write_table(client, TB_SESS, sessions, SESSIONS_SCHEMA)
-    
+
 # ============================================================
 # TOGGLE USER ACTIVE (used by Admin Panel)
 # ============================================================
