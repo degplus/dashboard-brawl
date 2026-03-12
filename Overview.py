@@ -1083,30 +1083,38 @@ if show_only_active:
         SELECT
             COALESCE(sp.PL_LINK, s.player_img_fact)   AS player_img,
             s.player_name_latest                       AS player_name,
+            dt.team_logo_url,
             COALESCE(sp.PL_CTEAM, s.player_team_fact) AS team,
             s.games, s.wins, s.losses, s.win_rate
         FROM stats s
         INNER JOIN `brawl-sandbox.brawl_stats.dim_source_players` sp
             ON s.player_tag = sp.PL_TAG AND sp.is_active = TRUE
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt
+            ON COALESCE(sp.PL_CTEAM, s.player_team_fact) = dt.team
         ORDER BY s.games DESC
     """, params_main)
 else:
     df_players = fetch_data(f"""
-        SELECT
-            ARRAY_AGG(player_img  ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_img,
-            ARRAY_AGG(player_name ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_name,
-            ARRAY_AGG(player_team ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS team,
-            COUNT(DISTINCT game) AS games,
-            COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) AS wins,
-            COUNT(DISTINCT CASE WHEN player_result = 'defeat'  THEN game END) AS losses,
-            SAFE_DIVIDE(
-                COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) * 100.0,
-                COUNT(DISTINCT CASE WHEN player_result IN ('victory','defeat') THEN game END)
-            ) AS win_rate
-        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-        WHERE {where_main}
-        GROUP BY player_tag
-        ORDER BY games DESC
+        WITH base AS (
+            SELECT
+                ARRAY_AGG(player_img  ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_img,
+                ARRAY_AGG(player_name ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_name,
+                ARRAY_AGG(player_team ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS team,
+                COUNT(DISTINCT game) AS games,
+                COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) AS wins,
+                COUNT(DISTINCT CASE WHEN player_result = 'defeat'  THEN game END) AS losses,
+                SAFE_DIVIDE(
+                    COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) * 100.0,
+                    COUNT(DISTINCT CASE WHEN player_result IN ('victory','defeat') THEN game END)
+                ) AS win_rate
+            FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+            WHERE {where_main}
+            GROUP BY player_tag
+        )
+        SELECT b.*, dt.team_logo_url
+        FROM base b
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt ON b.team = dt.team
+        ORDER BY b.games DESC
     """, params_main)
 
 if df_players.empty:
@@ -1115,15 +1123,16 @@ else:
     st.dataframe(
         df_players,
         use_container_width=True,
-        column_order=["player_img", "player_name", "team", "games", "wins", "losses", "win_rate"],
+        column_order=["player_img", "player_name", "team_logo_url", "team", "games", "wins", "losses", "win_rate"],
         column_config={
-            "player_img":  st.column_config.ImageColumn(""),
-            "player_name": st.column_config.TextColumn("Player"),
-            "team":        st.column_config.TextColumn("Team"),
-            "games":       st.column_config.NumberColumn("Games",    format="%d"),
-            "wins":        st.column_config.NumberColumn("Wins",     format="%d"),
-            "losses":      st.column_config.NumberColumn("Losses",   format="%d"),
-            "win_rate":    st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+            "player_img":    st.column_config.ImageColumn(""),
+            "player_name":   st.column_config.TextColumn("Player"),
+            "team_logo_url": st.column_config.ImageColumn("Team Logo"),
+            "team":          st.column_config.TextColumn("Team"),
+            "games":         st.column_config.NumberColumn("Games",    format="%d"),
+            "wins":          st.column_config.NumberColumn("Wins",     format="%d"),
+            "losses":        st.column_config.NumberColumn("Losses",   format="%d"),
+            "win_rate":      st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
         },
         hide_index=True
     )
@@ -1154,6 +1163,7 @@ df_teams = fetch_data(f"""
         GROUP BY player_team
     )
     SELECT
+        dt.team_logo_url, 
         f.player_team AS team,
         COUNT(DISTINCT f.game) AS games,
         COUNT(DISTINCT CASE WHEN f.player_result = 'victory' THEN f.game END) AS wins,
@@ -1164,8 +1174,9 @@ df_teams = fetch_data(f"""
         ) AS win_rate,
         tb.top_brawlers
     FROM filtered f
+    LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt ON f.player_team = dt.team
     LEFT JOIN top_brawlers tb ON f.player_team = tb.player_team
-    GROUP BY f.player_team, tb.top_brawlers
+    GROUP BY f.player_team, tb.top_brawlers, dt.team_logo_url
     ORDER BY games DESC
 """, params_main)
 
@@ -1175,14 +1186,16 @@ else:
     st.dataframe(
         df_teams,
         use_container_width=True,
-        column_order=["team", "games", "wins", "losses", "win_rate", "top_brawlers"],
+        # NOVO: Adicionado team_logo_url no order
+        column_order=["team_logo_url", "team", "games", "wins", "losses", "win_rate", "top_brawlers"],
         column_config={
-            "team":         st.column_config.TextColumn("Team"),
-            "games":        st.column_config.NumberColumn("Games",      format="%d"),
-            "wins":         st.column_config.NumberColumn("Wins",       format="%d"),
-            "losses":       st.column_config.NumberColumn("Losses",     format="%d"),
-            "win_rate":     st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
-            "top_brawlers": st.column_config.TextColumn("Top Brawlers", help="Top 3 most picked brawlers"),
+            "team_logo_url": st.column_config.ImageColumn("Logo"), # NOVO: Renderiza a imagem
+            "team":          st.column_config.TextColumn("Team"),
+            "games":         st.column_config.NumberColumn("Games",      format="%d"),
+            "wins":          st.column_config.NumberColumn("Wins",       format="%d"),
+            "losses":        st.column_config.NumberColumn("Losses",     format="%d"),
+            "win_rate":      st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+            "top_brawlers":  st.column_config.TextColumn("Top Brawlers", help="Top 3 most picked brawlers"),
         },
         hide_index=True
     )
@@ -1268,6 +1281,7 @@ else:
             WHERE player_team != @h2h_team AND player_team IS NOT NULL
         )
         SELECT
+            dt.team_logo_url AS opp_logo,
             og.opp_team AS opponent,
             COUNT(DISTINCT mg.game) AS games,
             COUNT(DISTINCT CASE WHEN mg.my_result = 'victory' THEN mg.game END) AS wins,
@@ -1278,7 +1292,8 @@ else:
             ) AS win_rate
         FROM my_games mg
         JOIN opponent_games og ON mg.game = og.game
-        GROUP BY og.opp_team
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt ON og.opp_team = dt.team
+        GROUP BY og.opp_team, dt.team_logo_url
         ORDER BY games DESC
     """, params_h2h)
 
@@ -1291,8 +1306,9 @@ else:
         ev_h2h = st.dataframe(
             df_h2h,
             use_container_width=True,
-            column_order=["opponent", "games", "wins", "losses", "win_rate"],
+            column_order=["opp_logo", "opponent", "games", "wins", "losses", "win_rate"],
             column_config={
+                "opp_logo": st.column_config.ImageColumn("Logo"),
                 "opponent": st.column_config.TextColumn("Opponent"),
                 "games":    st.column_config.NumberColumn("Games",    format="%d"),
                 "wins":     st.column_config.NumberColumn("Wins",     format="%d"),
