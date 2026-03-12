@@ -322,9 +322,7 @@ if profile:
     ic1, ic2 = st.columns([1, 11])
     with ic1:
         if icon_url:
-            icon_b64 = img_to_base64(icon_url)
-            if icon_b64:
-                st.image(icon_b64, width=56)
+            st.image(icon_url, width=56)
     with ic2:
         name_color_raw = profile.get("nameColor", "0xffffffff")
         name_color     = "#" + name_color_raw.replace("0xff", "").replace("0x", "")
