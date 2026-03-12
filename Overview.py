@@ -505,11 +505,13 @@ where_main, params_main = build_where(use_datetime=True)
 # ============================================================
 def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
     df_draft = fetch_data("""
-        SELECT team_num, player_name, player_team, player_result,
-               brawler_name, brawler_img, star_player_name
-        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-        WHERE game = @game_id
-        ORDER BY team_num, player_place
+        SELECT v.team_num, v.player_name, v.player_tag, v.player_team, v.player_result,
+               v.brawler_name, v.brawler_img, v.star_player_name,
+               dt.team_logo_url
+        FROM `brawl-sandbox.brawl_stats.vw_battles_python` v
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt ON v.player_team = dt.team
+        WHERE v.game = @game_id
+        ORDER BY v.team_num, v.player_place
     """, json.dumps([{"name": "game_id", "bq_type": "INT64", "value": game_id}]))
 
     if df_draft.empty:
@@ -526,21 +528,27 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
     red_team_name  = red["player_team"].iloc[0]    if not red.empty  else "Red"
     blue_emoji     = "🏆" if blue_result == "victory" else "💀"
     red_emoji      = "🏆" if red_result  == "victory" else "💀"
+    
+    # Busca a URL do logo (se existir)
+    blue_logo = blue["team_logo_url"].iloc[0] if not blue.empty and pd.notna(blue["team_logo_url"].iloc[0]) else None
+    red_logo  = red["team_logo_url"].iloc[0] if not red.empty and pd.notna(red["team_logo_url"].iloc[0]) else None
+
+    # Monta os títulos em HTML com a imagem do lado do nome!
+    blue_title = f"<img src='{blue_logo}' width='32' style='vertical-align: middle; margin-right: 8px;'/> {blue_team_name}" if blue_logo else blue_team_name
+    red_title  = f"{red_team_name} <img src='{red_logo}' width='32' style='vertical-align: middle; margin-left: 8px;'/>" if red_logo else red_team_name
 
     col_blue, col_center, col_red = st.columns([4, 2, 4])
 
     with col_blue:
         st.markdown(
-            f"<h3 style='color:#4A90D9;text-align:center'>{blue_team_name}</h3>",
+            f"<h3 style='color:#4A90D9;text-align:center'>{blue_title}</h3>",
             unsafe_allow_html=True
         )
         h1, h2, h3 = st.columns(3)
-        h1.markdown("**Team**")
-        h2.markdown("**Player**")
-        h3.markdown("**Pick**")
+        h1.markdown("**Team**"); h2.markdown("**Player**"); h3.markdown("**Pick**")
         for _, row in blue.iterrows():
             c1, c2, c3 = st.columns(3)
-            c1.write(row["player_team"] or "-")
+            c1.write(row["player_team"] or "—")
             c2.write(row["player_name"])
             if row["brawler_img"]:
                 c3.image(row["brawler_img"], width=48)
@@ -559,20 +567,18 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
 
     with col_red:
         st.markdown(
-            f"<h3 style='color:#D94A4A;text-align:center'>{red_team_name}</h3>",
+            f"<h3 style='color:#D94A4A;text-align:center'>{red_title}</h3>",
             unsafe_allow_html=True
         )
         h1, h2, h3 = st.columns(3)
-        h1.markdown("**Pick**")
-        h2.markdown("**Player**")
-        h3.markdown("**Team**")
+        h1.markdown("**Pick**"); h2.markdown("**Player**"); h3.markdown("**Team**")
         for _, row in red.iterrows():
             c1, c2, c3 = st.columns(3)
             if row["brawler_img"]:
                 c1.image(row["brawler_img"], width=48)
             c1.caption(row["brawler_name"])
             c2.write(row["player_name"])
-            c3.write(row["player_team"] or "-")
+            c3.write(row["player_team"] or "—")
         st.markdown(
             f"<h4 style='text-align:center'>{red_emoji} {'VICTORY' if red_result == 'victory' else 'DEFEAT'}</h4>",
             unsafe_allow_html=True
@@ -1083,38 +1089,30 @@ if show_only_active:
         SELECT
             COALESCE(sp.PL_LINK, s.player_img_fact)   AS player_img,
             s.player_name_latest                       AS player_name,
-            dt.team_logo_url,
             COALESCE(sp.PL_CTEAM, s.player_team_fact) AS team,
             s.games, s.wins, s.losses, s.win_rate
         FROM stats s
         INNER JOIN `brawl-sandbox.brawl_stats.dim_source_players` sp
             ON s.player_tag = sp.PL_TAG AND sp.is_active = TRUE
-        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt
-            ON COALESCE(sp.PL_CTEAM, s.player_team_fact) = dt.team
         ORDER BY s.games DESC
     """, params_main)
 else:
     df_players = fetch_data(f"""
-        WITH base AS (
-            SELECT
-                ARRAY_AGG(player_img  ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_img,
-                ARRAY_AGG(player_name ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_name,
-                ARRAY_AGG(player_team ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS team,
-                COUNT(DISTINCT game) AS games,
-                COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) AS wins,
-                COUNT(DISTINCT CASE WHEN player_result = 'defeat'  THEN game END) AS losses,
-                SAFE_DIVIDE(
-                    COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) * 100.0,
-                    COUNT(DISTINCT CASE WHEN player_result IN ('victory','defeat') THEN game END)
-                ) AS win_rate
-            FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-            WHERE {where_main}
-            GROUP BY player_tag
-        )
-        SELECT b.*, dt.team_logo_url
-        FROM base b
-        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt ON b.team = dt.team
-        ORDER BY b.games DESC
+        SELECT
+            ARRAY_AGG(player_img  ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_img,
+            ARRAY_AGG(player_name ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS player_name,
+            ARRAY_AGG(player_team ORDER BY battle_time DESC LIMIT 1)[OFFSET(0)] AS team,
+            COUNT(DISTINCT game) AS games,
+            COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) AS wins,
+            COUNT(DISTINCT CASE WHEN player_result = 'defeat'  THEN game END) AS losses,
+            SAFE_DIVIDE(
+                COUNT(DISTINCT CASE WHEN player_result = 'victory' THEN game END) * 100.0,
+                COUNT(DISTINCT CASE WHEN player_result IN ('victory','defeat') THEN game END)
+            ) AS win_rate
+        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+        WHERE {where_main}
+        GROUP BY player_tag
+        ORDER BY games DESC
     """, params_main)
 
 if df_players.empty:
@@ -1123,16 +1121,15 @@ else:
     st.dataframe(
         df_players,
         use_container_width=True,
-        column_order=["player_img", "player_name", "team_logo_url", "team", "games", "wins", "losses", "win_rate"],
+        column_order=["player_img", "player_name", "team", "games", "wins", "losses", "win_rate"],
         column_config={
-            "player_img":    st.column_config.ImageColumn(""),
-            "player_name":   st.column_config.TextColumn("Player"),
-            "team_logo_url": st.column_config.ImageColumn("Team Logo"),
-            "team":          st.column_config.TextColumn("Team"),
-            "games":         st.column_config.NumberColumn("Games",    format="%d"),
-            "wins":          st.column_config.NumberColumn("Wins",     format="%d"),
-            "losses":        st.column_config.NumberColumn("Losses",   format="%d"),
-            "win_rate":      st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+            "player_img":  st.column_config.ImageColumn(""),
+            "player_name": st.column_config.TextColumn("Player"),
+            "team":        st.column_config.TextColumn("Team"),
+            "games":       st.column_config.NumberColumn("Games",    format="%d"),
+            "wins":        st.column_config.NumberColumn("Wins",     format="%d"),
+            "losses":      st.column_config.NumberColumn("Losses",   format="%d"),
+            "win_rate":    st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
         },
         hide_index=True
     )

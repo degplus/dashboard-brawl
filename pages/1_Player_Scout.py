@@ -136,11 +136,13 @@ def get_player_date_range(tag: str):
 # ============================================================
 def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
     df_draft = fetch_data("""
-        SELECT team_num, player_name, player_tag, player_team, player_result,
-               brawler_name, brawler_img, star_player_name
-        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-        WHERE game = @game_id
-        ORDER BY team_num, player_place
+        SELECT v.team_num, v.player_name, v.player_tag, v.player_team, v.player_result,
+               v.brawler_name, v.brawler_img, v.star_player_name,
+               dt.team_logo_url
+        FROM `brawl-sandbox.brawl_stats.vw_battles_python` v
+        LEFT JOIN `brawl-sandbox.brawl_stats.dim_teams` dt ON v.player_team = dt.team
+        WHERE v.game = @game_id
+        ORDER BY v.team_num, v.player_place
     """, json.dumps([{"name": "game_id", "bq_type": "INT64", "value": game_id}]))
 
     if df_draft.empty:
@@ -149,19 +151,28 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
 
     blue = df_draft[df_draft["team_num"] == 1].reset_index(drop=True)
     red  = df_draft[df_draft["team_num"] == 2].reset_index(drop=True)
+
     star_player    = df_draft["star_player_name"].iloc[0]
     blue_result    = blue["player_result"].iloc[0] if not blue.empty else ""
     red_result     = red["player_result"].iloc[0]  if not red.empty  else ""
     blue_team_name = blue["player_team"].iloc[0]   if not blue.empty else "Blue"
     red_team_name  = red["player_team"].iloc[0]    if not red.empty  else "Red"
-    blue_emoji = "🏆" if blue_result == "victory" else "💀"
-    red_emoji  = "🏆" if red_result  == "victory" else "💀"
+    blue_emoji     = "🏆" if blue_result == "victory" else "💀"
+    red_emoji      = "🏆" if red_result  == "victory" else "💀"
+    
+    # Busca a URL do logo (se existir)
+    blue_logo = blue["team_logo_url"].iloc[0] if not blue.empty and pd.notna(blue["team_logo_url"].iloc[0]) else None
+    red_logo  = red["team_logo_url"].iloc[0] if not red.empty and pd.notna(red["team_logo_url"].iloc[0]) else None
+
+    # Monta os títulos em HTML com a imagem do lado do nome!
+    blue_title = f"<img src='{blue_logo}' width='32' style='vertical-align: middle; margin-right: 8px;'/> {blue_team_name}" if blue_logo else blue_team_name
+    red_title  = f"{red_team_name} <img src='{red_logo}' width='32' style='vertical-align: middle; margin-left: 8px;'/>" if red_logo else red_team_name
 
     col_blue, col_center, col_red = st.columns([4, 2, 4])
 
     with col_blue:
         st.markdown(
-            f"<h3 style='color:#4A90D9;text-align:center'>{blue_team_name}</h3>",
+            f"<h3 style='color:#4A90D9;text-align:center'>{blue_title}</h3>",
             unsafe_allow_html=True
         )
         h1, h2, h3 = st.columns(3)
@@ -183,11 +194,11 @@ def render_draft(game_id: int, map_name: str, map_img: str, bt: str):
         if map_img:
             st.image(map_img, use_container_width=True)
         st.markdown(f"<p style='text-align:center'>⭐ <b>{star_player}</b></p>", unsafe_allow_html=True)
-        st.caption(bt)
+        st.caption(f"{bt}")
 
     with col_red:
         st.markdown(
-            f"<h3 style='color:#D94A4A;text-align:center'>{red_team_name}</h3>",
+            f"<h3 style='color:#D94A4A;text-align:center'>{red_title}</h3>",
             unsafe_allow_html=True
         )
         h1, h2, h3 = st.columns(3)
