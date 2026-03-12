@@ -165,7 +165,7 @@ club_tag = club.get("tag", "") if club else ""
 card_img, card_info = st.columns([1, 7])
 with card_img:
     if icon_url:
-        st.image(b64, width=80)
+        st.image(icon_url, width=80)
 with card_info:
     champion_badge = (
         " "
