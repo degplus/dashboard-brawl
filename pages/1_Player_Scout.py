@@ -6,8 +6,6 @@ import pandas as pd
 import plotly.express as px
 import json
 import requests
-import base64
-from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============================================================
@@ -75,22 +73,6 @@ def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
             bq_params.append(param_cls(p["name"], p["bq_type"], p["value"]))
     job_config = bigquery.QueryJobConfig(query_parameters=bq_params)
     return client.query(query, job_config=job_config).result().to_dataframe()
-
-# ============================================================
-# IMAGE → BASE64
-# ============================================================
-@st.cache_data(ttl=86400, persist="disk")
-def img_to_base64(url: str) -> str | None:
-    if not url:
-        return None
-    try:
-        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
-        if resp.status_code == 200:
-            mime = resp.headers.get("Content-Type", "image/png").split(";")[0]
-            b64 = base64.b64encode(resp.content).decode()
-            return f"data:{mime};base64,{b64}"
-    except Exception:
-        return None
 
 # ============================================================
 # BRAWL STARS API — PLAYER PROFILE (via bsproxy)
@@ -292,7 +274,7 @@ p_img_df = fetch_data("""
 
 card_img, card_info = st.columns([1, 7])
 with card_img:
-    if not p_img_df.empty and p_img_df["player_img"].iloc[0]:
+    if not p_img_df.empty and pd.notna(p_img_df["player_img"].iloc[0]):
         # Exibe direto da URL do seu GitHub, sem converter!
         st.image(p_img_df["player_img"].iloc[0], width=80)
 

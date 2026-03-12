@@ -1,8 +1,6 @@
 # pages/2_Player_Profile.py
 import streamlit as st
 import requests
-import base64
-from PIL import Image
 import pandas as pd
 
 # ============================================================
@@ -79,18 +77,6 @@ def fetch_api_profile(tag: str) -> dict | None:
     except Exception as e:
         return {"_error": "exception", "_detail": str(e)}
 
-@st.cache_data(ttl=86400)
-def img_to_base64(url: str) -> str | None:
-    if not url:
-        return None
-    try:
-        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
-        if resp.status_code == 200:
-            mime = resp.headers.get("Content-Type", "image/png").split(";")[0]
-            b64 = base64.b64encode(resp.content).decode()
-            return f"data:{mime};base64,{b64}"
-    except Exception:
-        return None
 
 # ============================================================
 # HEADER

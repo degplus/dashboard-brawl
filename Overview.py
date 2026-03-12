@@ -9,8 +9,6 @@ import datetime
 from datetime import timezone
 import json
 import requests
-import base64
-from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -72,11 +70,6 @@ def set_gradient_background():
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
 set_gradient_background()
-
-
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 
 
 # ============================================================
@@ -146,31 +139,7 @@ def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
             bq_params.append(param_cls(p["name"], p["bq_type"], p["value"]))
     job_config = bigquery.QueryJobConfig(query_parameters=bq_params)
     return client.query(query, job_config=job_config).result().to_dataframe()
-# ============================================================
-# IMAGE → BASE64
-# ============================================================
-@st.cache_data(ttl=86400, persist="disk")
-def img_to_base64(url: str) -> str | None:
-    if not url:
-        return None
-    try:
-        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
-        if resp.status_code == 200:
-            mime = resp.headers.get("Content-Type", "image/png").split(";")[0]
-            b64 = base64.b64encode(resp.content).decode()
-            return f"data:{mime};base64,{b64}"
-    except Exception:
-        return None
 
-def convert_img_column(series: pd.Series) -> pd.Series:
-    urls = series.tolist()
-    results = {}
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(img_to_base64, url): i for i, url in enumerate(urls)}
-        for future in as_completed(futures):
-            i = futures[future]
-            results[i] = future.result()
-    return pd.Series([results[i] for i in range(len(urls))])
 # ============================================================
 # DIM FILTERS
 # ============================================================
