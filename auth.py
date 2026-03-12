@@ -92,7 +92,7 @@ def check_password(plain: str, hashed: str) -> bool:
 # ============================================================
 def get_user(client: bigquery.Client, email: str) -> dict | None:
     rows = client.query(f"""
-        SELECT email, password_hash, display_name, is_active, must_change_password
+        SELECT email, password_hash, display_name, is_active, must_change_password, expiration_date
         FROM `{TB_USERS}`
         WHERE LOWER(email) = LOWER(@email)
         LIMIT 1
@@ -112,6 +112,12 @@ def do_login(client: bigquery.Client, email: str, password: str) -> dict:
         return {"success": False, "message": "Email not found."}
     if not user["is_active"]:
         return {"success": False, "message": "Account disabled. Contact the administrator."}
+    
+    # NOVO: Trava do crachá vencido
+    if user.get("expiration_date"):
+        if datetime.now(timezone.utc).date() > user["expiration_date"]:
+            return {"success": False, "message": "Subscription expired. Please renew your access."}
+
     if not check_password(password, user["password_hash"]):
         return {"success": False, "message": "Incorrect password."}
 
@@ -119,7 +125,6 @@ def do_login(client: bigquery.Client, email: str, password: str) -> dict:
     expires_at = now + timedelta(hours=SESSION_DURATION_HOURS)
     token      = str(uuid.uuid4())
 
-    # Deactivate old sessions (B1) — read, modify, rewrite
     sessions = _read_table(client, TB_SESS)
     for s in sessions:
         if s["email"].lower() == email.lower() and s["is_active"]:
@@ -148,6 +153,7 @@ def do_login(client: bigquery.Client, email: str, password: str) -> dict:
 def validate_token(client: bigquery.Client, token: str) -> dict | None:
     now = datetime.now(timezone.utc)
 
+    # NOVO: Adicionado checagem de u.expiration_date no SQL
     rows = client.query(f"""
         SELECT s.email, s.expires_at, u.display_name, u.must_change_password
         FROM `{TB_SESS}` s
@@ -156,6 +162,7 @@ def validate_token(client: bigquery.Client, token: str) -> dict | None:
           AND s.is_active     = TRUE
           AND s.expires_at    > @now
           AND u.is_active     = TRUE
+          AND (u.expiration_date IS NULL OR u.expiration_date >= CURRENT_DATE())
         LIMIT 1
     """, job_config=bigquery.QueryJobConfig(query_parameters=[
         bigquery.ScalarQueryParameter("token", "STRING",    token),
@@ -198,7 +205,8 @@ def change_password(client: bigquery.Client, email: str, new_password: str):
 # ============================================================
 # CREATE USER (used by Admin Panel)
 # ============================================================
-def create_user(client: bigquery.Client, email: str, display_name: str, temp_password: str):
+# NOVO: Agora aceita o expiration_date opcional
+def create_user(client: bigquery.Client, email: str, display_name: str, temp_password: str, exp_date=None):
     now = datetime.now(timezone.utc)
     _append_rows(client, TB_USERS, [{
         "email":                email,
@@ -208,8 +216,35 @@ def create_user(client: bigquery.Client, email: str, display_name: str, temp_pas
         "must_change_password": True,
         "created_at":           now,
         "updated_at":           now,
+        "expiration_date":      exp_date,
     }], USERS_SCHEMA)
 
+# ============================================================
+# UPDATE EXPIRATION DATE
+# ============================================================
+def update_user_expiration(client: bigquery.Client, email: str, new_date):
+    now   = datetime.now(timezone.utc)
+    users = _read_table(client, TB_USERS)
+    for u in users:
+        if u["email"].lower() == email.lower():
+            u["expiration_date"] = new_date
+            u["updated_at"]      = now
+    _write_table(client, TB_USERS, users, USERS_SCHEMA)
+
+# ============================================================
+# DELETE USER
+# ============================================================
+def delete_user(client: bigquery.Client, email: str):
+    # 1. Apaga da tabela de usuários
+    users = _read_table(client, TB_USERS)
+    users = [u for u in users if u["email"].lower() != email.lower()]
+    _write_table(client, TB_USERS, users, USERS_SCHEMA)
+
+    # 2. Apaga da tabela de sessões (para deslogar na hora e limpar o rastro)
+    sessions = _read_table(client, TB_SESS)
+    sessions = [s for s in sessions if s["email"].lower() != email.lower()]
+    _write_table(client, TB_SESS, sessions, SESSIONS_SCHEMA)
+    
 # ============================================================
 # TOGGLE USER ACTIVE (used by Admin Panel)
 # ============================================================
