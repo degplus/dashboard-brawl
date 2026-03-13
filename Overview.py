@@ -737,328 +737,328 @@ else:
 # COMPOSITION ANALYSIS
 # ============================================================
 st.markdown("---")
+st.subheader("🤝 Composition Analysis")
 
-with st.expander("🤝 Composition Analysis", expanded=False):
-    tab_trio, tab_ctr = st.tabs([
-        "🔺 Trio — Full Composition",
-        "🛡️ Counter — Opposite Teams",
-    ])
+tab_trio, tab_ctr = st.tabs([
+    "🔺 Trio — Full Composition",
+    "🛡️ Counter — Opposite Teams",
+])
 
-    # ── TRIO ─────────────────────────────────────────────────
-    with tab_trio:
-        st.caption(
-            "Three brawlers that played on the **same team** in the same match. "
-            "Minimum 10 games. Sorted by win rate. " # 🔄 Alterado de 5 para 10
-            "Filter by **Team** in the sidebar to see your team's compositions. "
-            "Click a row to see maps and teams where this composition was used."
+# ── TRIO ─────────────────────────────────────────────────
+with tab_trio:
+    st.caption(
+        "Three brawlers that played on the **same team** in the same match. "
+        "Minimum 10 games. Sorted by win rate. " # 🔄 Alterado de 5 para 10
+        "Filter by **Team** in the sidebar to see your team's compositions. "
+        "Click a row to see maps and teams where this composition was used."
+    )
+
+    df_trio = fetch_data(f"""
+        WITH filtered AS (
+            SELECT game, brawler_name, brawler_img, player_team, player_result
+            FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+            WHERE {where_main}
+        )
+        SELECT
+            a.brawler_name     AS brawler_a,
+            MAX(a.brawler_img) AS img_a,
+            b.brawler_name     AS brawler_b,
+            MAX(b.brawler_img) AS img_b,
+            c.brawler_name     AS brawler_c,
+            MAX(c.brawler_img) AS img_c,
+            COUNT(DISTINCT a.game) AS games,
+            SAFE_DIVIDE(
+                COUNT(DISTINCT CASE WHEN a.player_result = 'victory' THEN a.game END) * 100.0,
+                COUNT(DISTINCT CASE WHEN a.player_result IN ('victory','defeat') THEN a.game END)
+            ) AS win_rate
+        FROM filtered a
+        JOIN filtered b
+            ON  a.game        = b.game
+            AND a.player_team = b.player_team
+            AND a.brawler_name < b.brawler_name
+        JOIN filtered c
+            ON  a.game        = c.game
+            AND a.player_team = c.player_team
+            AND b.brawler_name < c.brawler_name
+        GROUP BY brawler_a, brawler_b, brawler_c
+        HAVING games >= 10 -- 🔄 Alterado de 5 para 10 aqui no SQL!
+        ORDER BY win_rate DESC, games DESC
+        LIMIT 50
+    """, params_main)
+
+    if df_trio.empty:
+        # 🔄 Alterado o aviso de 5 para 10
+        st.info("Not enough data to show trio compositions (minimum 10 games per composition).") 
+    else:
+        ev_trio = st.dataframe(
+            df_trio,
+            use_container_width=True,
+            column_order=["img_a", "brawler_a", "img_b", "brawler_b", "img_c", "brawler_c", "games", "win_rate"],
+            column_config={
+                "img_a":     st.column_config.ImageColumn(""),
+                "brawler_a": st.column_config.TextColumn("Brawler A"),
+                "img_b":     st.column_config.ImageColumn(""),
+                "brawler_b": st.column_config.TextColumn("Brawler B"),
+                "img_c":     st.column_config.ImageColumn(""),
+                "brawler_c": st.column_config.TextColumn("Brawler C"),
+                "games":     st.column_config.NumberColumn("Games",    format="%d"),
+                "win_rate":  st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+            },
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="single-row"
         )
 
-        df_trio = fetch_data(f"""
-            WITH filtered AS (
-                SELECT game, brawler_name, brawler_img, player_team, player_result
-                FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-                WHERE {where_main}
-            )
-            SELECT
-                a.brawler_name     AS brawler_a,
-                MAX(a.brawler_img) AS img_a,
-                b.brawler_name     AS brawler_b,
-                MAX(b.brawler_img) AS img_b,
-                c.brawler_name     AS brawler_c,
-                MAX(c.brawler_img) AS img_c,
-                COUNT(DISTINCT a.game) AS games,
-                SAFE_DIVIDE(
-                    COUNT(DISTINCT CASE WHEN a.player_result = 'victory' THEN a.game END) * 100.0,
-                    COUNT(DISTINCT CASE WHEN a.player_result IN ('victory','defeat') THEN a.game END)
-                ) AS win_rate
-            FROM filtered a
-            JOIN filtered b
-                ON  a.game        = b.game
+        sel_trio = ev_trio.selection.rows
+        if sel_trio:
+            row_trio = df_trio.iloc[sel_trio[0]]
+            ba = row_trio["brawler_a"]
+            bb = row_trio["brawler_b"]
+            bc = row_trio["brawler_c"]
+
+            st.markdown(f"#### 🔍 Detail: **{ba}** + **{bb}** + **{bc}**")
+
+            trio_detail_params = json.loads(params_main) + [
+                {"name": "ba", "bq_type": "STRING", "value": ba},
+                {"name": "bb", "bq_type": "STRING", "value": bb},
+                {"name": "bc", "bq_type": "STRING", "value": bc},
+            ]
+            df_trio_detail = fetch_data(f"""
+        WITH base AS (
+            SELECT game, brawler_name, player_team, player_result,
+                   map, map_img, mode
+            FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+            WHERE {where_main}
+        ),
+        matching_games AS (
+            SELECT a.game, a.player_team
+            FROM base a
+            JOIN base b
+                ON a.game = b.game
                 AND a.player_team = b.player_team
-                AND a.brawler_name < b.brawler_name
-            JOIN filtered c
-                ON  a.game        = c.game
+                AND b.brawler_name = @bb
+            JOIN base c
+                ON a.game = c.game
                 AND a.player_team = c.player_team
-                AND b.brawler_name < c.brawler_name
-            GROUP BY brawler_a, brawler_b, brawler_c
-            HAVING games >= 10 -- 🔄 Alterado de 5 para 10 aqui no SQL!
-            ORDER BY win_rate DESC, games DESC
-            LIMIT 50
-        """, params_main)
-
-        if df_trio.empty:
-            # 🔄 Alterado o aviso de 5 para 10
-            st.info("Not enough data to show trio compositions (minimum 10 games per composition).") 
-        else:
-            ev_trio = st.dataframe(
-                df_trio,
-                use_container_width=True,
-                column_order=["img_a", "brawler_a", "img_b", "brawler_b", "img_c", "brawler_c", "games", "win_rate"],
-                column_config={
-                    "img_a":     st.column_config.ImageColumn(""),
-                    "brawler_a": st.column_config.TextColumn("Brawler A"),
-                    "img_b":     st.column_config.ImageColumn(""),
-                    "brawler_b": st.column_config.TextColumn("Brawler B"),
-                    "img_c":     st.column_config.ImageColumn(""),
-                    "brawler_c": st.column_config.TextColumn("Brawler C"),
-                    "games":     st.column_config.NumberColumn("Games",    format="%d"),
-                    "win_rate":  st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
-                },
-                hide_index=True,
-                on_select="rerun",
-                selection_mode="single-row"
-            )
-
-            sel_trio = ev_trio.selection.rows
-            if sel_trio:
-                row_trio = df_trio.iloc[sel_trio[0]]
-                ba = row_trio["brawler_a"]
-                bb = row_trio["brawler_b"]
-                bc = row_trio["brawler_c"]
-
-                st.markdown(f"#### 🔍 Detail: **{ba}** + **{bb}** + **{bc}**")
-
-                trio_detail_params = json.loads(params_main) + [
-                    {"name": "ba", "bq_type": "STRING", "value": ba},
-                    {"name": "bb", "bq_type": "STRING", "value": bb},
-                    {"name": "bc", "bq_type": "STRING", "value": bc},
-                ]
-                df_trio_detail = fetch_data(f"""
-		    WITH base AS (
-		        SELECT game, brawler_name, player_team, player_result,
-		               map, map_img, mode
-		        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-		        WHERE {where_main}
-		    ),
-		    matching_games AS (
-		        SELECT a.game, a.player_team
-		        FROM base a
-		        JOIN base b
-		            ON a.game = b.game
-		            AND a.player_team = b.player_team
-		            AND b.brawler_name = @bb
-		        JOIN base c
-		            ON a.game = c.game
-		            AND a.player_team = c.player_team
-		            AND c.brawler_name = @bc
-		        WHERE a.brawler_name = @ba
-		          AND a.player_team IS NOT NULL
-		    ),
-		    game_info AS (
-		        SELECT game, MAX(map_img) AS map_img, MAX(map) AS map,
-		               MAX(mode) AS mode, MAX(player_result) AS player_result
-		        FROM base
-		        GROUP BY game
-		    )
-		    SELECT
-		        gi.map_img,
-		        gi.map,
-		        gi.mode,
-		        mg.player_team AS team,
-		        COUNT(DISTINCT mg.game) AS games,
-		        SAFE_DIVIDE(
-		            COUNT(DISTINCT CASE WHEN gi.player_result = 'victory' THEN mg.game END) * 100.0,
-		            COUNT(DISTINCT CASE WHEN gi.player_result IN ('victory','defeat') THEN mg.game END)
-		        ) AS win_rate
-		    FROM matching_games mg
-		    JOIN game_info gi ON mg.game = gi.game
-		    GROUP BY gi.map_img, gi.map, gi.mode, mg.player_team
-		    ORDER BY games DESC
+                AND c.brawler_name = @bc
+            WHERE a.brawler_name = @ba
+              AND a.player_team IS NOT NULL
+        ),
+        game_info AS (
+            SELECT game, MAX(map_img) AS map_img, MAX(map) AS map,
+                   MAX(mode) AS mode, MAX(player_result) AS player_result
+            FROM base
+            GROUP BY game
+        )
+        SELECT
+            gi.map_img,
+            gi.map,
+            gi.mode,
+            mg.player_team AS team,
+            COUNT(DISTINCT mg.game) AS games,
+            SAFE_DIVIDE(
+                COUNT(DISTINCT CASE WHEN gi.player_result = 'victory' THEN mg.game END) * 100.0,
+                COUNT(DISTINCT CASE WHEN gi.player_result IN ('victory','defeat') THEN mg.game END)
+            ) AS win_rate
+        FROM matching_games mg
+        JOIN game_info gi ON mg.game = gi.game
+        GROUP BY gi.map_img, gi.map, gi.mode, mg.player_team
+        ORDER BY games DESC
 """, json.dumps(trio_detail_params))
 
 
 
-                if df_trio_detail.empty:
-                    st.info("No detail data found.")
-                else:
-                    dcol1, dcol2 = st.columns(2)
+            if df_trio_detail.empty:
+                st.info("No detail data found.")
+            else:
+                dcol1, dcol2 = st.columns(2)
 
-                    with dcol1:
-                        st.markdown("**🗺️ By Map**")
-                        st.dataframe(
-                            df_trio_detail[["map_img", "map", "mode", "games", "win_rate"]].drop_duplicates().sort_values("games", ascending=False),
-                            use_container_width=True,
-                            column_config={
-                                "map_img":  st.column_config.ImageColumn(""),
-                                "map":      st.column_config.TextColumn("Map"),
-                                "mode":     st.column_config.TextColumn("Mode"),
-                                "games":    st.column_config.NumberColumn("Games",    format="%d"),
-                                "win_rate": st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
-                            },
-                            hide_index=True
-                        )
+                with dcol1:
+                    st.markdown("**🗺️ By Map**")
+                    st.dataframe(
+                        df_trio_detail[["map_img", "map", "mode", "games", "win_rate"]].drop_duplicates().sort_values("games", ascending=False),
+                        use_container_width=True,
+                        column_config={
+                            "map_img":  st.column_config.ImageColumn(""),
+                            "map":      st.column_config.TextColumn("Map"),
+                            "mode":     st.column_config.TextColumn("Mode"),
+                            "games":    st.column_config.NumberColumn("Games",    format="%d"),
+                            "win_rate": st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+                        },
+                        hide_index=True
+                    )
 
-                    with dcol2:
-                        st.markdown("**🏆 By Team**")
-                        df_by_team = (
-                            df_trio_detail.groupby("team")
-                            .agg(games=("games", "sum"), win_rate=("win_rate", "mean"))
-                            .reset_index()
-                            .sort_values("games", ascending=False)
-                        )
-                        st.dataframe(
-                            df_by_team,
-                            use_container_width=True,
-                            column_config={
-                                "team":     st.column_config.TextColumn("Team"),
-                                "games":    st.column_config.NumberColumn("Games",    format="%d"),
-                                "win_rate": st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
-                            },
-                            hide_index=True
-                        )
-    # ── COUNTER ──────────────────────────────────────────────
-    with tab_ctr:
-        st.caption(
-            "Pairs of brawlers that faced each other on **opposite teams** in the same match. "
-            "Win Rate shows how often Brawler A's team wins. Minimum 10 games. "
-            "Click a row to see maps and teams where this matchup occurred."
+                with dcol2:
+                    st.markdown("**🏆 By Team**")
+                    df_by_team = (
+                        df_trio_detail.groupby("team")
+                        .agg(games=("games", "sum"), win_rate=("win_rate", "mean"))
+                        .reset_index()
+                        .sort_values("games", ascending=False)
+                    )
+                    st.dataframe(
+                        df_by_team,
+                        use_container_width=True,
+                        column_config={
+                            "team":     st.column_config.TextColumn("Team"),
+                            "games":    st.column_config.NumberColumn("Games",    format="%d"),
+                            "win_rate": st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+                        },
+                        hide_index=True
+                    )
+# ── COUNTER ──────────────────────────────────────────────
+with tab_ctr:
+    st.caption(
+        "Pairs of brawlers that faced each other on **opposite teams** in the same match. "
+        "Win Rate shows how often Brawler A's team wins. Minimum 10 games. "
+        "Click a row to see maps and teams where this matchup occurred."
+    )
+
+    df_ctr = fetch_data(f"""
+        WITH filtered AS (
+            SELECT game, brawler_name, brawler_img, player_team, player_result
+            FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+            WHERE {where_main}
+        )
+        SELECT
+            a.brawler_name     AS brawler_a,
+            MAX(a.brawler_img) AS img_a,
+            b.brawler_name     AS brawler_b,
+            MAX(b.brawler_img) AS img_b,
+            COUNT(DISTINCT a.game) AS games,
+            SAFE_DIVIDE(
+                COUNT(DISTINCT CASE WHEN a.player_result = 'victory' THEN a.game END) * 100.0,
+                COUNT(DISTINCT CASE WHEN a.player_result IN ('victory','defeat') THEN a.game END)
+            ) AS win_rate_a
+        FROM filtered a
+        JOIN filtered b
+            ON  a.game        = b.game
+            AND a.player_team != b.player_team
+            AND a.brawler_name < b.brawler_name
+        GROUP BY brawler_a, brawler_b
+        HAVING games >= 10
+        ORDER BY win_rate_a DESC, games DESC
+        LIMIT 50
+    """, params_main)
+
+    if df_ctr.empty:
+        st.info("Not enough data to show counter matchups (minimum 10 games per pair).")
+    else:
+        ev_ctr = st.dataframe(
+            df_ctr,
+            use_container_width=True,
+            column_order=["img_a", "brawler_a", "img_b", "brawler_b", "games", "win_rate_a"],
+            column_config={
+                "img_a":      st.column_config.ImageColumn(""),
+                "brawler_a":  st.column_config.TextColumn("Brawler A"),
+                "img_b":      st.column_config.ImageColumn(""),
+                "brawler_b":  st.column_config.TextColumn("Brawler B"),
+                "games":      st.column_config.NumberColumn("Games",          format="%d"),
+                "win_rate_a": st.column_config.ProgressColumn("Win Rate (A)", format="%.1f%%", min_value=0, max_value=100),
+            },
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="single-row"
         )
 
-        df_ctr = fetch_data(f"""
-            WITH filtered AS (
-                SELECT game, brawler_name, brawler_img, player_team, player_result
-                FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-                WHERE {where_main}
-            )
-            SELECT
-                a.brawler_name     AS brawler_a,
-                MAX(a.brawler_img) AS img_a,
-                b.brawler_name     AS brawler_b,
-                MAX(b.brawler_img) AS img_b,
-                COUNT(DISTINCT a.game) AS games,
-                SAFE_DIVIDE(
-                    COUNT(DISTINCT CASE WHEN a.player_result = 'victory' THEN a.game END) * 100.0,
-                    COUNT(DISTINCT CASE WHEN a.player_result IN ('victory','defeat') THEN a.game END)
-                ) AS win_rate_a
-            FROM filtered a
-            JOIN filtered b
-                ON  a.game        = b.game
-                AND a.player_team != b.player_team
-                AND a.brawler_name < b.brawler_name
-            GROUP BY brawler_a, brawler_b
-            HAVING games >= 10
-            ORDER BY win_rate_a DESC, games DESC
-            LIMIT 50
-        """, params_main)
+        sel_ctr = ev_ctr.selection.rows
+        if sel_ctr:
+            row_ctr = df_ctr.iloc[sel_ctr[0]]
+            ca = row_ctr["brawler_a"]
+            cb = row_ctr["brawler_b"]
 
-        if df_ctr.empty:
-            st.info("Not enough data to show counter matchups (minimum 10 games per pair).")
-        else:
-            ev_ctr = st.dataframe(
-                df_ctr,
-                use_container_width=True,
-                column_order=["img_a", "brawler_a", "img_b", "brawler_b", "games", "win_rate_a"],
-                column_config={
-                    "img_a":      st.column_config.ImageColumn(""),
-                    "brawler_a":  st.column_config.TextColumn("Brawler A"),
-                    "img_b":      st.column_config.ImageColumn(""),
-                    "brawler_b":  st.column_config.TextColumn("Brawler B"),
-                    "games":      st.column_config.NumberColumn("Games",          format="%d"),
-                    "win_rate_a": st.column_config.ProgressColumn("Win Rate (A)", format="%.1f%%", min_value=0, max_value=100),
-                },
-                hide_index=True,
-                on_select="rerun",
-                selection_mode="single-row"
-            )
+            st.markdown(f"#### 🔍 Detail: **{ca}** vs **{cb}**")
 
-            sel_ctr = ev_ctr.selection.rows
-            if sel_ctr:
-                row_ctr = df_ctr.iloc[sel_ctr[0]]
-                ca = row_ctr["brawler_a"]
-                cb = row_ctr["brawler_b"]
+            ctr_detail_params = json.loads(params_main) + [
+                {"name": "ca", "bq_type": "STRING", "value": ca},
+                {"name": "cb", "bq_type": "STRING", "value": cb},
+            ]
 
-                st.markdown(f"#### 🔍 Detail: **{ca}** vs **{cb}**")
+            df_ctr_detail = fetch_data(f"""
+                WITH base AS (
+                    SELECT game, brawler_name, player_team, player_result,
+                           map, map_img, mode
+                    FROM `brawl-sandbox.brawl_stats.vw_battles_python`
+                    WHERE {where_main}
+                ),
+                matching_games AS (
+                    SELECT a.game, a.player_team AS team_a,
+                           b.player_team AS team_b, a.player_result AS result_a
+                    FROM base a
+                    JOIN base b
+                        ON  a.game        = b.game
+                        AND a.player_team != b.player_team
+                        AND b.brawler_name = @cb
+                    WHERE a.brawler_name = @ca
+                ),
+                game_info AS (
+                    SELECT game, MAX(map_img) AS map_img,
+                           MAX(map) AS map, MAX(mode) AS mode
+                    FROM base
+                    GROUP BY game
+                )
+                SELECT
+                    gi.map_img,
+                    gi.map,
+                    gi.mode,
+                    mg.team_a,
+                    mg.team_b,
+                    COUNT(DISTINCT mg.game) AS games,
+                    SAFE_DIVIDE(
+                        COUNT(DISTINCT CASE WHEN mg.result_a = 'victory' THEN mg.game END) * 100.0,
+                        COUNT(DISTINCT CASE WHEN mg.result_a IN ('victory','defeat') THEN mg.game END)
+                    ) AS win_rate_a
+                FROM matching_games mg
+                JOIN game_info gi ON mg.game = gi.game
+                GROUP BY gi.map_img, gi.map, gi.mode, mg.team_a, mg.team_b
+                ORDER BY games DESC
+            """, json.dumps(ctr_detail_params))
 
-                ctr_detail_params = json.loads(params_main) + [
-                    {"name": "ca", "bq_type": "STRING", "value": ca},
-                    {"name": "cb", "bq_type": "STRING", "value": cb},
-                ]
+            if df_ctr_detail.empty:
+                st.info("No detail data found.")
+            else:
+                dcol1, dcol2 = st.columns(2)
 
-                df_ctr_detail = fetch_data(f"""
-                    WITH base AS (
-                        SELECT game, brawler_name, player_team, player_result,
-                               map, map_img, mode
-                        FROM `brawl-sandbox.brawl_stats.vw_battles_python`
-                        WHERE {where_main}
-                    ),
-                    matching_games AS (
-                        SELECT a.game, a.player_team AS team_a,
-                               b.player_team AS team_b, a.player_result AS result_a
-                        FROM base a
-                        JOIN base b
-                            ON  a.game        = b.game
-                            AND a.player_team != b.player_team
-                            AND b.brawler_name = @cb
-                        WHERE a.brawler_name = @ca
-                    ),
-                    game_info AS (
-                        SELECT game, MAX(map_img) AS map_img,
-                               MAX(map) AS map, MAX(mode) AS mode
-                        FROM base
-                        GROUP BY game
+                with dcol1:
+                    st.markdown("**🗺️ By Map**")
+                    df_map_ctr = (
+                        df_ctr_detail.groupby(["map_img", "map", "mode"])
+                        .agg(games=("games", "sum"), win_rate_a=("win_rate_a", "mean"))
+                        .reset_index()
+                        .sort_values("games", ascending=False)
                     )
-                    SELECT
-                        gi.map_img,
-                        gi.map,
-                        gi.mode,
-                        mg.team_a,
-                        mg.team_b,
-                        COUNT(DISTINCT mg.game) AS games,
-                        SAFE_DIVIDE(
-                            COUNT(DISTINCT CASE WHEN mg.result_a = 'victory' THEN mg.game END) * 100.0,
-                            COUNT(DISTINCT CASE WHEN mg.result_a IN ('victory','defeat') THEN mg.game END)
-                        ) AS win_rate_a
-                    FROM matching_games mg
-                    JOIN game_info gi ON mg.game = gi.game
-                    GROUP BY gi.map_img, gi.map, gi.mode, mg.team_a, mg.team_b
-                    ORDER BY games DESC
-                """, json.dumps(ctr_detail_params))
+                    st.dataframe(
+                        df_map_ctr,
+                        use_container_width=True,
+                        column_config={
+                            "map_img":    st.column_config.ImageColumn(""),
+                            "map":        st.column_config.TextColumn("Map"),
+                            "mode":       st.column_config.TextColumn("Mode"),
+                            "games":      st.column_config.NumberColumn("Games",          format="%d"),
+                            "win_rate_a": st.column_config.ProgressColumn("Win Rate (A)", format="%.1f%%", min_value=0, max_value=100),
+                        },
+                        hide_index=True
+                    )
 
-                if df_ctr_detail.empty:
-                    st.info("No detail data found.")
-                else:
-                    dcol1, dcol2 = st.columns(2)
-
-                    with dcol1:
-                        st.markdown("**🗺️ By Map**")
-                        df_map_ctr = (
-                            df_ctr_detail.groupby(["map_img", "map", "mode"])
-                            .agg(games=("games", "sum"), win_rate_a=("win_rate_a", "mean"))
-                            .reset_index()
-                            .sort_values("games", ascending=False)
-                        )
-                        st.dataframe(
-                            df_map_ctr,
-                            use_container_width=True,
-                            column_config={
-                                "map_img":    st.column_config.ImageColumn(""),
-                                "map":        st.column_config.TextColumn("Map"),
-                                "mode":       st.column_config.TextColumn("Mode"),
-                                "games":      st.column_config.NumberColumn("Games",          format="%d"),
-                                "win_rate_a": st.column_config.ProgressColumn("Win Rate (A)", format="%.1f%%", min_value=0, max_value=100),
-                            },
-                            hide_index=True
-                        )
-
-                    with dcol2:
-                        st.markdown(f"**🏆 Teams using {ca}**")
-                        df_team_ctr = (
-                            df_ctr_detail.groupby("team_a")
-                            .agg(games=("games", "sum"), win_rate_a=("win_rate_a", "mean"))
-                            .reset_index()
-                            .rename(columns={"team_a": "team"})
-                            .sort_values("games", ascending=False)
-                        )
-                        st.dataframe(
-                            df_team_ctr,
-                            use_container_width=True,
-                            column_config={
-                                "team":       st.column_config.TextColumn("Team"),
-                                "games":      st.column_config.NumberColumn("Games",          format="%d"),
-                                "win_rate_a": st.column_config.ProgressColumn("Win Rate (A)", format="%.1f%%", min_value=0, max_value=100),
-                            },
-                            hide_index=True
-                        )
+                with dcol2:
+                    st.markdown(f"**🏆 Teams using {ca}**")
+                    df_team_ctr = (
+                        df_ctr_detail.groupby("team_a")
+                        .agg(games=("games", "sum"), win_rate_a=("win_rate_a", "mean"))
+                        .reset_index()
+                        .rename(columns={"team_a": "team"})
+                        .sort_values("games", ascending=False)
+                    )
+                    st.dataframe(
+                        df_team_ctr,
+                        use_container_width=True,
+                        column_config={
+                            "team":       st.column_config.TextColumn("Team"),
+                            "games":      st.column_config.NumberColumn("Games",          format="%d"),
+                            "win_rate_a": st.column_config.ProgressColumn("Win Rate (A)", format="%.1f%%", min_value=0, max_value=100),
+                        },
+                        hide_index=True
+                    )
 
 
 st.markdown("---")
