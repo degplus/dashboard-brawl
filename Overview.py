@@ -1261,8 +1261,7 @@ if not all_teams:
     st.info("Select a team in the sidebar to see matchups.")
 else:
     h2h_team = all_teams[0]
-    where_h2h, base_params = build_where_h2h()
-
+    
     if len(all_teams) > 1:
         other_teams = ", ".join(all_teams[1:])
         st.warning(
