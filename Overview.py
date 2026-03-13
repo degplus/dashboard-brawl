@@ -231,6 +231,25 @@ df_dim           = load_dim_filters()
 player_names     = load_player_names()
 all_player_names = load_all_player_names()
 
+# 🔌 AQUI ENTRA A NOSSA PEÇA DE LEGO MESTRA!
+from sidebar_filters import render_sidebar_filters
+filter_data = render_sidebar_filters(df_dim, player_names, all_player_names)
+
+# Desempacotando tudo para a página inteira usar
+where_main       = filter_data["where_main"]
+params_main      = filter_data["params_main"]
+where_h2h        = filter_data["where_h2h"]
+base_params      = filter_data["base_params_h2h"]
+show_only_active = filter_data["show_only_active"]
+full_squad_only  = filter_data["full_squad_only"]
+
+# ============================================================
+# HEADER
+# ============================================================
+st.title("📊 Overview")
+st.caption("Brawl Stars — Competitive Match Analysis")
+st.markdown("---")
+
 # ============================================================
 # HEADER
 # ============================================================
@@ -1256,15 +1275,12 @@ st.markdown("---")
 # ============================================================
 st.header("⚔️ Head to Head")
 
-all_teams = st.session_state.f_team
+all_teams = st.session_state.get("f_team", [])
+
 if not all_teams:
     st.info("Select a team in the sidebar to see matchups.")
 else:
     h2h_team = all_teams[0]
-    
-    # 🔌 PUXANDO O FIO DA PEÇA DE LEGO DIRETAMENTE AQUI:
-    where_h2h = filter_data["where_h2h"]
-    base_params = filter_data["base_params_h2h"]
 
     if len(all_teams) > 1:
         other_teams = ", ".join(all_teams[1:])
