@@ -231,7 +231,33 @@ df_dim           = load_dim_filters()
 player_names     = load_player_names()
 all_player_names = load_all_player_names()
 
-# 🔌 AQUI ENTRA A NOSSA PEÇA DE LEGO MESTRA!
+# ============================================================
+# SIDEBAR — USER INFO & LOGOUT
+# ============================================================
+with st.sidebar:
+    st.markdown(f"👤 **{st.session_state.get('user_name', '')}**")
+    st.caption(st.session_state.get("user_email", ""))
+
+    if st.session_state.get("user_email") == "android.deg@gmail.com":
+        st.subheader("🛠️ Admin Panel")
+        if st.button("🔄 Force Refresh", use_container_width=True, type="primary"):
+            st.cache_data.clear()
+            st.rerun()
+
+    st.divider()
+
+    if st.button("🚪 Logout", use_container_width=True):
+        from auth import do_logout
+        from login import clear_token
+        do_logout(client, st.session_state.get("session_token", ""))
+        clear_token()
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+
+# ============================================================
+# 🔌 A PEÇA DE LEGO (FILTROS)
+# ============================================================
 from sidebar_filters import render_sidebar_filters
 filter_data = render_sidebar_filters(df_dim, player_names, all_player_names)
 
@@ -242,13 +268,6 @@ where_h2h        = filter_data["where_h2h"]
 base_params      = filter_data["base_params_h2h"]
 show_only_active = filter_data["show_only_active"]
 full_squad_only  = filter_data["full_squad_only"]
-
-# ============================================================
-# HEADER
-# ============================================================
-st.title("📊 Overview")
-st.caption("Brawl Stars — Competitive Match Analysis")
-st.markdown("---")
 
 # ============================================================
 # HEADER
