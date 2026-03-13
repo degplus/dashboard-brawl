@@ -91,14 +91,27 @@ with tab_online:
         st.info("No active sessions right now.")
     else:
         df_sess = pd.DataFrame(sessions)
+        
+        # 1. Ajuste de Fuso Horário (De UTC para Brasília GMT-3)
+        # O BigQuery retorna datetime 'naive' (sem fuso na variável) mas sabemos que é UTC.
+        # Então dizemos ao Pandas "Isso é UTC", e depois "Converta para São Paulo".
+        if not df_sess.empty:
+            df_sess['login_time'] = pd.to_datetime(df_sess['login_time']).dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
+            df_sess['expires_at'] = pd.to_datetime(df_sess['expires_at']).dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
+
+        # 2. Truque do Corte (Garante que só vai pra tela o que a gente quer)
+        colunas_visiveis_sess = ["display_name", "email", "login_time", "expires_at"]
+        df_sess_view = df_sess[colunas_visiveis_sess]
+
         st.dataframe(
-            df_sess,
+            df_sess_view,
             use_container_width=True,
             column_config={
                 "display_name": "Name",
                 "email":        "Email",
-                "login_time":   st.column_config.DatetimeColumn("Logged in at (UTC)", format="YYYY-MM-DD HH:mm"),
-                "expires_at":   st.column_config.DatetimeColumn("Session Expiry (UTC)", format="YYYY-MM-DD HH:mm"),
+                # Mudamos o texto do cabeçalho para (BRT) - Brazilian Time
+                "login_time":   st.column_config.DatetimeColumn("Logged in at (BRT)", format="YYYY-MM-DD HH:mm"),
+                "expires_at":   st.column_config.DatetimeColumn("Session Expiry (BRT)", format="YYYY-MM-DD HH:mm"),
             },
             hide_index=True
         )
