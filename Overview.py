@@ -1224,10 +1224,14 @@ if df_games.empty:
     st.warning("No games found for the selected filters.")
 else:
     st.caption("Click a row to view the draft event")
+
+    # ✂️ O TRUQUE DO CORTE: Deixamos o map_img de fora da bandeja
+    colunas_visiveis_games = ["game", "battletime", "map", "mode"]
+    df_games_view = df_games[colunas_visiveis_games]
+
     event = st.dataframe(
-        df_games,
+        df_games_view, # <-- Tabela cortada
         use_container_width=True,
-        column_order=["game", "battletime", "map", "mode"],
         column_config={
             "game":       st.column_config.NumberColumn("Game", format="%d"),
             "battletime": st.column_config.TextColumn("Date / Time"),
@@ -1400,10 +1404,13 @@ else:
                     lambda x: "🏆 WIN" if x == "victory" else "💀 LOSS"
                 )
 
+                # ✂️ O TRUQUE DO CORTE NO DETALHE DO H2H
+                colunas_visiveis_matchups = ["game", "battletime", "map", "mode", "my_result_show", "opp_result_show"]
+                df_matchups_view = df_matchups[colunas_visiveis_matchups]
+
                 ev_match = st.dataframe(
-                    df_matchups,
+                    df_matchups_view, # <-- Tabela cortada
                     use_container_width=True,
-                    column_order=["game", "battletime", "map", "mode", "my_result_show", "opp_result_show"],
                     column_config={
                         "game":            st.column_config.NumberColumn("Game", format="%d"),
                         "battletime":      st.column_config.TextColumn("Date / Time"),

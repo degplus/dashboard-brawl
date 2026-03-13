@@ -655,10 +655,15 @@ else:
         lambda x: "WIN" if x == "victory" else "LOSS"
     )
     st.caption("Click a row to view the full draft.")
+    
+    # ✂️ O TRUQUE DO CORTE: Separamos só o que vai para a tela, 
+    # deixando map_img e player_result escondidos do Streamlit!
+    colunas_visiveis_recent = ["game", "battle_time", "map", "mode", "result_show", "player_team"]
+    df_games_view = df_games[colunas_visiveis_recent]
+
     ev = st.dataframe(
-        df_games,
+        df_games_view, # <-- Passamos a tabela cortada
         use_container_width=True,
-        column_order=["game", "battle_time", "map", "mode", "result_show", "player_team"],
         column_config={
             "game":        st.column_config.NumberColumn("Game", format="%d"),
             "battle_time": st.column_config.TextColumn("Date/Time"),
@@ -673,6 +678,6 @@ else:
     )
     selected = ev.selection.rows
     if selected:
-        row = df_games.iloc[selected[0]]
+        row = df_games.iloc[selected[0]] # A linha original (com map_img) é puxada do df_games intacto!
         st.markdown("---")
         render_draft(int(row["game"]), row["map"], row["map_img"], row["battle_time"])
