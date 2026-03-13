@@ -790,7 +790,6 @@ with st.expander("🤝 Composition Analysis", expanded=False):
             # 🔄 Alterado o aviso de 5 para 10
             st.info("Not enough data to show trio compositions (minimum 10 games per composition).") 
         else:
-        else:
             ev_trio = st.dataframe(
                 df_trio,
                 use_container_width=True,
