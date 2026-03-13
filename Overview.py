@@ -1262,6 +1262,10 @@ if not all_teams:
 else:
     h2h_team = all_teams[0]
     
+    # 🔌 PUXANDO O FIO DA PEÇA DE LEGO DIRETAMENTE AQUI:
+    where_h2h = filter_data["where_h2h"]
+    base_params = filter_data["base_params_h2h"]
+
     if len(all_teams) > 1:
         other_teams = ", ".join(all_teams[1:])
         st.warning(
@@ -1272,6 +1276,7 @@ else:
     params_h2h = json.dumps(base_params + [
         {"name": "h2h_team", "bq_type": "STRING", "value": h2h_team}
     ])
+    
 
     df_h2h = fetch_data(f"""
         WITH my_games AS (
