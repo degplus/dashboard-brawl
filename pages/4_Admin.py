@@ -95,9 +95,10 @@ with tab_online:
         # 1. Ajuste de Fuso Horário (De UTC para Brasília GMT-3)
         # O BigQuery retorna datetime 'naive' (sem fuso na variável) mas sabemos que é UTC.
         # Então dizemos ao Pandas "Isso é UTC", e depois "Converta para São Paulo".
+        # Como o BQ já entrega com fuso (tz-aware), nós apenas convertemos!
         if not df_sess.empty:
-            df_sess['login_time'] = pd.to_datetime(df_sess['login_time']).dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
-            df_sess['expires_at'] = pd.to_datetime(df_sess['expires_at']).dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
+            df_sess['login_time'] = pd.to_datetime(df_sess['login_time']).dt.tz_convert('America/Sao_Paulo')
+            df_sess['expires_at'] = pd.to_datetime(df_sess['expires_at']).dt.tz_convert('America/Sao_Paulo')
 
         # 2. Truque do Corte (Garante que só vai pra tela o que a gente quer)
         colunas_visiveis_sess = ["display_name", "email", "login_time", "expires_at"]
