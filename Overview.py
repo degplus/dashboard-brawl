@@ -748,7 +748,7 @@ with st.expander("🤝 Composition Analysis", expanded=False):
     with tab_trio:
         st.caption(
             "Three brawlers that played on the **same team** in the same match. "
-            "Minimum 5 games. Sorted by win rate. "
+            "Minimum 10 games. Sorted by win rate. " # 🔄 Alterado de 5 para 10
             "Filter by **Team** in the sidebar to see your team's compositions. "
             "Click a row to see maps and teams where this composition was used."
         )
@@ -781,13 +781,15 @@ with st.expander("🤝 Composition Analysis", expanded=False):
                 AND a.player_team = c.player_team
                 AND b.brawler_name < c.brawler_name
             GROUP BY brawler_a, brawler_b, brawler_c
-            HAVING games >= 5
+            HAVING games >= 10 -- 🔄 Alterado de 5 para 10 aqui no SQL!
             ORDER BY win_rate DESC, games DESC
             LIMIT 50
         """, params_main)
 
         if df_trio.empty:
-            st.info("Not enough data to show trio compositions (minimum 5 games per composition).")
+            # 🔄 Alterado o aviso de 5 para 10
+            st.info("Not enough data to show trio compositions (minimum 10 games per composition).") 
+        else:
         else:
             ev_trio = st.dataframe(
                 df_trio,
