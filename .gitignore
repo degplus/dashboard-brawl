@@ -3,3 +3,8 @@ create_admin.py
 __pycache__/
 *.pyc
 
+# Ambientes Virtuais (Para o Git ignorar as bibliotecas instaladas localmente)
+venv/
+.venv/
+env/
+lib/
