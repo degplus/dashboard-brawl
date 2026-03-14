@@ -17,6 +17,21 @@ st.set_page_config(
     layout="wide"
 )
 
+def set_gradient_background():
+    page_bg_img = """
+    <style>
+    .stApp {
+        /* "to bottom" faz descer reto (vertical) */
+        /* Cores: Começa bem escuro (#0e1117) e vai clareando para um azul noturno (#2a2d4a) */
+        background-image: linear-gradient(to bottom, #0e1117, #1c1f33);
+        background-attachment: fixed;
+    }
+    </style>
+    """
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
+set_gradient_background()
+
 # ============================================================
 # BIGQUERY CLIENT
 # ============================================================
