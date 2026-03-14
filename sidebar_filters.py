@@ -111,12 +111,21 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
 
         for i, (key, label, emoji) in enumerate(filters_config):
             options = get_filter_options(key)
-            st.multiselect(
+            
+            # 1. Olha na mochila o que já estava selecionado (e garante que a opção ainda existe no filtro)
+            mochila = st.session_state.get(key, [])
+            selecionados_salvos = [item for item in mochila if item in options]
+            
+            # 2. Desenha o filtro usando o valor da mochila como padrão (sem usar o key=key)
+            selecionados_agora = st.multiselect(
                 f"{emoji} {label}",
                 options=options,
-                key=key,
+                default=selecionados_salvos,
                 placeholder=f"All {label.lower()}s..."
             )
+            
+            # 3. Guarda de volta na mochila
+            st.session_state[key] = selecionados_agora
             
             if key == "f_team":
                 if len(st.session_state.f_team) == 2:
