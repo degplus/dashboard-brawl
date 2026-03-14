@@ -9,6 +9,34 @@ from login import check_existing_session, apply_ui_permissions
 # ============================================================
 st.set_page_config(page_title="Change Password — DegStats", page_icon="🔑", layout="centered")
 
+# ============================================================
+# 🚫 LIMPANDO O VISUAL (Escondendo menus do Streamlit)
+# ============================================================
+st.markdown("""
+    <style>
+        /* 1. Esconde Cabeçalho, Menu Hamburger e Toolbar */
+        [data-testid="stHeader"] {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
+        header {visibility: hidden !important;}
+        
+        /* 2. Esconde Rodapé Padrão */
+        footer {visibility: hidden !important; display: none !important;}
+        
+        /* 3. Esconde o botão Manage App e o Viewer Badge no canto inferior */
+        .viewerBadge_container {display: none !important;}
+        #viewerBadge_container {display: none !important;}
+        [data-testid="stAppDeployButton"] {display: none !important;}
+        .stDeployButton {display: none !important;}
+        [data-testid="manage-app-button"] {display: none !important;}
+        
+        /* 4. Ajuste de margem para o conteúdo subir e cobrir o vazio */
+        .block-container {
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 def set_gradient_background():
     page_bg_img = """
     <style>

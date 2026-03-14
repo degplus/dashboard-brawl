@@ -23,32 +23,26 @@ st.set_page_config(
 )
 
 # ============================================================
-# 🚫 LIMPEZA VISUAL (TENTATIVA MÁXIMA)
+# 🚫 LIMPANDO O VISUAL (Escondendo menus do Streamlit)
 # ============================================================
 st.markdown("""
     <style>
         /* 1. Esconde Cabeçalho, Menu Hamburger e Toolbar */
-        header {visibility: hidden !important;}
         [data-testid="stHeader"] {display: none !important;}
         [data-testid="stToolbar"] {display: none !important;}
+        header {visibility: hidden !important;}
         
         /* 2. Esconde Rodapé Padrão */
-        footer {visibility: hidden !important; height: 0px !important;}
+        footer {visibility: hidden !important; display: none !important;}
         
-        /* 3. Tenta esconder o Badge do Perfil (Bonequinho) */
-        /* Procura por qualquer DIV que tenha 'viewerBadge' no nome da classe */
-        div[class*="viewerBadge"] {
-            visibility: hidden !important;
-            display: none !important;
-            opacity: 0 !important;
-        }
-
-        /* 4. Tenta esconder o botão 'Hosted with Streamlit' vermelho */
-        .stApp > footer {
-            display: none !important;
-        }
+        /* 3. Esconde o botão Manage App e o Viewer Badge no canto inferior */
+        .viewerBadge_container {display: none !important;}
+        #viewerBadge_container {display: none !important;}
+        [data-testid="stAppDeployButton"] {display: none !important;}
+        .stDeployButton {display: none !important;}
+        [data-testid="manage-app-button"] {display: none !important;}
         
-        /* 5. Ajuste de margem para o conteúdo subir e cobrir o vazio */
+        /* 4. Ajuste de margem para o conteúdo subir e cobrir o vazio */
         .block-container {
             padding-top: 0rem !important;
             padding-bottom: 0rem !important;
