@@ -141,7 +141,7 @@ with st.expander("👥 Toggles (Active Roster & Full Squad)"):
     st.markdown("""
     Just above the filters, you'll find two important toggles:
     
-    - **Show only active roster:** When ON, the 'Player' filter will only show members currently active in the organization. Turn it OFF to search for any player that has historically played a tracked match.
+    - **Show only active roster:** When ON, the 'Player' filter shows players currently considered active in the competitive scene. This specifically includes rosters from the Monthly Finals. If a new team qualifies, the rosters from past Monthly Finals remain active in the system, and the new team is simply added to the analysis. Turn it OFF to search for any player that has historically played a tracked match.
     - **Full Squad Only:** When ON, the dashboard only counts matches where all 3 tracked players from the same team played together. Turn it OFF to include matches where members played in partial squads or solo.
     """)
 
