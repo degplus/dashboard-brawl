@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import json
+import plotly.express as px
 from google.oauth2 import service_account
 from google.cloud import bigquery
 
 # ============================================================
 # 1. PAGE CONFIG
 # ============================================================
-st.set_page_config(page_title="META - DegStats", page_icon="👑", layout="wide")
+st.set_page_config(page_title="Meta — DegStats", page_icon="👑", layout="wide")
 
 # ============================================================
 # 2. BIGQUERY CLIENT & AUTHENTICATION GUARD
@@ -38,7 +39,7 @@ if st.session_state.get("must_change_password"):
     st.stop()
 
 # ============================================================
-# 3. DATA LOADERS (Obrigatório para a Peça de Lego funcionar aqui)
+# 3. DATA LOADERS (Obrigatório para a Peça de Lego funcionar)
 # ============================================================
 @st.cache_data(ttl=3600)
 def fetch_data(query: str, params_json: str = None) -> pd.DataFrame:
@@ -105,10 +106,10 @@ where_main  = filter_data["where_main"]
 params_main = filter_data["params_main"]
 
 # ============================================================
-# 5. UI PRINCIPAL
+# 5. UI PRINCIPAL — META
 # ============================================================
 st.title("👑 Meta & Tier List")
-st.caption("Dynamic Tier List based on Meta Score (Win Rate × Pick Rate). Adapts automatically to your sidebar filters!")
+st.caption("Visual Tier List based on Meta Score (Win Rate × Pick Rate). Adapts automatically to your sidebar filters!")
 st.markdown("---")
 
 # Buscando os dados dos brawlers
@@ -138,15 +139,10 @@ with st.spinner("Calculating Meta Score..."):
 if df_brawlers.empty:
     st.warning("No data found for the selected filters.")
 else:
-    # --- A MÁGICA DA MATEMÁTICA ACONTECE AQUI ---
-    
-    # 1. Calcular o Meta Score (Pick Rate * Win Rate normalizado)
+    # --- A MÁGICA DA MATEMÁTICA ---
     df_brawlers["meta_score"] = (df_brawlers["pick_rate"] / 100) * (df_brawlers["win_rate"] / 100)
-    
-    # 2. Calcular o Percentil (Rankeia de 0.0 a 1.0)
     df_brawlers["percentile"] = df_brawlers["meta_score"].rank(pct=True)
 
-    # 3. Definir as Tiers baseadas na sua regra exata
     def assign_tier(p):
         if p >= 0.90:   return "👑 S"
         elif p >= 0.70: return "🟢 A"
@@ -156,24 +152,115 @@ else:
         else:           return "💀 F"
 
     df_brawlers["tier"] = df_brawlers["percentile"].apply(assign_tier)
-    
-    # 4. Ordenar do melhor para o pior
     df_brawlers = df_brawlers.sort_values(by="meta_score", ascending=False).reset_index(drop=True)
 
-    # 5. Exibir a Tabela
-    st.dataframe(
+    # Cores fixas para cada Tier (Para o Gráfico e para a Tabela Visual)
+    tier_colors = {
+        "👑 S": "#FFD700",  # Dourado
+        "🟢 A": "#4CAF50",  # Verde
+        "🟡 B": "#FFEB3B",  # Amarelo
+        "🟠 C": "#FF9800",  # Laranja
+        "🔴 D": "#F44336",  # Vermelho
+        "💀 F": "#9E9E9E"   # Cinza
+    }
+
+    # ========================================================
+    # GRÁFICO DE DISPERSÃO (META MAP)
+    # ========================================================
+    st.subheader("🗺️ Meta Map (Pick Rate vs Win Rate)")
+    st.caption("Brawlers no canto superior direito são as escolhas mais fortes e seguras.")
+    
+    fig = px.scatter(
         df_brawlers,
-        use_container_width=True,
-        column_order=["tier", "brawler_img", "brawler_name", "picks", "pick_rate", "wins", "losses", "win_rate"],
-        column_config={
-            "tier":         st.column_config.TextColumn("Tier"),
-            "brawler_img":  st.column_config.ImageColumn(""),
-            "brawler_name": st.column_config.TextColumn("Brawler"),
-            "picks":        st.column_config.NumberColumn("Picks",     format="%d"),
-            "pick_rate":    st.column_config.ProgressColumn("Pick Rate", format="%.1f%%", min_value=0, max_value=100),
-            "wins":         st.column_config.NumberColumn("Wins",      format="%d"),
-            "losses":       st.column_config.NumberColumn("Losses",    format="%d"),
-            "win_rate":     st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+        x="pick_rate",
+        y="win_rate",
+        color="tier",
+        hover_name="brawler_name",
+        hover_data={
+            "tier": False, 
+            "pick_rate": ":.1f", 
+            "win_rate": ":.1f", 
+            "meta_score": ":.4f"
         },
-        hide_index=True
+        color_discrete_map=tier_colors,
+        labels={"pick_rate": "Pick Rate (%)", "win_rate": "Win Rate (%)"}
     )
+    
+    # Linha de 50% de Win Rate
+    fig.add_hline(y=50, line_dash="dash", line_color="white", opacity=0.3, annotation_text="50% WR")
+    
+    fig.update_traces(marker=dict(size=14, line=dict(width=1, color='DarkSlateGrey')))
+    fig.update_layout(hovermode="closest", height=500)
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("---")
+
+    # ========================================================
+    # TIER LIST VISUAL (HTML/CSS)
+    # ========================================================
+    st.subheader("📋 Visual Tier List")
+    st.caption("Brawlers classificados do melhor para o pior dentro de cada tier. Passe o mouse sobre a imagem para ver os stats.")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Injetando HTML para construir as linhas
+    html_tier_list = "<div style='display: flex; flex-direction: column; gap: 6px;'>"
+    
+    ordem_tiers = ["👑 S", "🟢 A", "🟡 B", "🟠 C", "🔴 D", "💀 F"]
+    
+    for tier in ordem_tiers:
+        brawlers_no_tier = df_brawlers[df_brawlers["tier"] == tier]
+        if brawlers_no_tier.empty:
+            continue
+            
+        color = tier_colors.get(tier, "#FFFFFF")
+        letra = tier.split(' ')[1] # Pega só a letra (S, A, B...)
+        
+        html_tier_list += f"""
+        <div style="display: flex; background-color: #1E1E1E; border-radius: 6px; border: 1px solid #333; overflow: hidden; min-height: 80px;">
+            <div style="width: 80px; min-width: 80px; background-color: {color}; color: #000; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; box-shadow: 2px 0px 5px rgba(0,0,0,0.3); z-index: 10;">
+                {letra}
+            </div>
+            <div style="display: flex; flex-wrap: wrap; padding: 10px; gap: 10px; align-items: center;">
+        """
+        
+        for _, row in brawlers_no_tier.iterrows():
+            tooltip = f"{row['brawler_name']} &#10;Win Rate: {row['win_rate']:.1f}% &#10;Pick Rate: {row['pick_rate']:.1f}%"
+            html_tier_list += f"""
+                <div style="position: relative; display: inline-block;">
+                    <img src="{row['brawler_img']}" width="60" style="border: 2px solid {color}; border-radius: 8px; background-color: #000;" title="{tooltip}">
+                </div>
+            """
+            
+        html_tier_list += """
+            </div>
+        </div>
+        """
+        
+    html_tier_list += "</div>"
+    
+    # Renderiza a mágica na tela!
+    st.markdown(html_tier_list, unsafe_allow_html=True)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ========================================================
+    # TABELA DE DADOS RAW (OPCIONAL, DENTRO DE UM EXPANDER)
+    # ========================================================
+    with st.expander("📊 View Raw Data Table"):
+        st.dataframe(
+            df_brawlers,
+            use_container_width=True,
+            column_order=["tier", "brawler_img", "brawler_name", "picks", "pick_rate", "wins", "losses", "win_rate"],
+            column_config={
+                "tier":         st.column_config.TextColumn("Tier"),
+                "brawler_img":  st.column_config.ImageColumn(""),
+                "brawler_name": st.column_config.TextColumn("Brawler"),
+                "picks":        st.column_config.NumberColumn("Picks",     format="%d"),
+                "pick_rate":    st.column_config.ProgressColumn("Pick Rate", format="%.1f%%", min_value=0, max_value=100),
+                "wins":         st.column_config.NumberColumn("Wins",      format="%d"),
+                "losses":       st.column_config.NumberColumn("Losses",    format="%d"),
+                "win_rate":     st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
+            },
+            hide_index=True
+        )
