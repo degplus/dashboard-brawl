@@ -106,13 +106,13 @@ where_main  = filter_data["where_main"]
 params_main = filter_data["params_main"]
 
 # ============================================================
-# 5. UI PRINCIPAL — META
+# 5. MAIN UI — META
 # ============================================================
 st.title("👑 Meta & Tier List")
 st.caption("Visual Tier List based on Meta Score (Win Rate × Pick Rate). Adapts automatically to your sidebar filters!")
 st.markdown("---")
 
-# Buscando os dados dos brawlers
+# Fetching Brawler Data
 with st.spinner("Calculating Meta Score..."):
     df_brawlers = fetch_data(f"""
         WITH total AS (
@@ -139,8 +139,9 @@ with st.spinner("Calculating Meta Score..."):
 if df_brawlers.empty:
     st.warning("No data found for the selected filters.")
 else:
-    # --- A MÁGICA DA MATEMÁTICA ---
+    # --- MATH & RANKING ---
     df_brawlers["meta_score"] = (df_brawlers["pick_rate"] / 100) * (df_brawlers["win_rate"] / 100)
+    df_brawlers["meta_score_pct"] = df_brawlers["meta_score"] * 100 # Converted to percentage for display
     df_brawlers["percentile"] = df_brawlers["meta_score"].rank(pct=True)
 
     def assign_tier(p):
@@ -154,21 +155,21 @@ else:
     df_brawlers["tier"] = df_brawlers["percentile"].apply(assign_tier)
     df_brawlers = df_brawlers.sort_values(by="meta_score", ascending=False).reset_index(drop=True)
 
-    # Cores fixas para cada Tier (Para o Gráfico e para a Tabela Visual)
+    # Distinct Colors for each Tier
     tier_colors = {
-        "👑 S": "#FFD700",  # Dourado
-        "🟢 A": "#4CAF50",  # Verde
-        "🟡 B": "#FFEB3B",  # Amarelo
-        "🟠 C": "#FF9800",  # Laranja
-        "🔴 D": "#F44336",  # Vermelho
-        "💀 F": "#9E9E9E"   # Cinza
+        "👑 S": "#E040FB",  # Magenta / Pink
+        "🟢 A": "#9C27B0",  # Purple
+        "🟡 B": "#2196F3",  # Blue
+        "🟠 C": "#4CAF50",  # Green
+        "🔴 D": "#FF9800",  # Orange
+        "💀 F": "#F44336"   # Red
     }
 
     # ========================================================
-    # GRÁFICO DE DISPERSÃO (META MAP)
+    # SCATTER PLOT (META MAP)
     # ========================================================
     st.subheader("🗺️ Meta Map (Pick Rate vs Win Rate)")
-    st.caption("Brawlers no canto superior direito são as escolhas mais fortes e seguras.")
+    st.caption("Brawlers in the top-right corner are the strongest and safest picks. Overlapping dots are semi-transparent.")
     
     fig = px.scatter(
         df_brawlers,
@@ -176,20 +177,22 @@ else:
         y="win_rate",
         color="tier",
         hover_name="brawler_name",
-        hover_data={
-            "tier": False, 
-            "pick_rate": ":.1f", 
-            "win_rate": ":.1f", 
-            "meta_score": ":.4f"
-        },
+        custom_data=["meta_score_pct"], # Passes our new % score to the tooltip
         color_discrete_map=tier_colors,
         labels={"pick_rate": "Pick Rate (%)", "win_rate": "Win Rate (%)"}
     )
     
-    # Linha de 50% de Win Rate
+    # 50% Win Rate baseline
     fig.add_hline(y=50, line_dash="dash", line_color="white", opacity=0.3, annotation_text="50% WR")
     
-    fig.update_traces(marker=dict(size=14, line=dict(width=1, color='DarkSlateGrey')))
+    # Customizing the Tooltip & Opacity
+    fig.update_traces(
+        hovertemplate="<b>%{hovertext}</b><br><br>" +
+                      "Pick Rate = %{x:.2f}%<br>" +
+                      "Win Rate = %{y:.2f}%<br>" +
+                      "Meta Score = %{customdata[0]:.2f}%<extra></extra>",
+        marker=dict(size=14, opacity=0.8, line=dict(width=1, color='DarkSlateGrey'))
+    )
     fig.update_layout(hovermode="closest", height=500)
     
     st.plotly_chart(fig, use_container_width=True)
@@ -197,15 +200,14 @@ else:
     st.markdown("---")
 
     # ========================================================
-    # TIER LIST VISUAL (HTML/CSS)
+    # VISUAL TIER LIST (HTML/CSS)
     # ========================================================
     st.subheader("📋 Visual Tier List")
-    st.caption("Brawlers classificados do melhor para o pior dentro de cada tier. Passe o mouse sobre a imagem para ver os stats.")
+    st.caption("Brawlers ranked from best to worst within each tier. Hover over the image to see stats.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Injetando HTML para construir as linhas
-    html_tier_list = "<div style='display: flex; flex-direction: column; gap: 6px;'>"
-    
+    # HTML builder: Removing line breaks inside the string to prevent Streamlit Markdown bugs
+    html_tier_list = "<div style='display: flex; flex-direction: column; gap: 8px;'>"
     ordem_tiers = ["👑 S", "🟢 A", "🟡 B", "🟠 C", "🔴 D", "💀 F"]
     
     for tier in ordem_tiers:
@@ -214,38 +216,27 @@ else:
             continue
             
         color = tier_colors.get(tier, "#FFFFFF")
-        letra = tier.split(' ')[1] # Pega só a letra (S, A, B...)
+        letra = tier.split(' ')[1]
         
-        html_tier_list += f"""
-        <div style="display: flex; background-color: #1E1E1E; border-radius: 6px; border: 1px solid #333; overflow: hidden; min-height: 80px;">
-            <div style="width: 80px; min-width: 80px; background-color: {color}; color: #000; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; box-shadow: 2px 0px 5px rgba(0,0,0,0.3); z-index: 10;">
-                {letra}
-            </div>
-            <div style="display: flex; flex-wrap: wrap; padding: 10px; gap: 10px; align-items: center;">
-        """
+        # Creating a single HTML string line per tier block
+        row_html = f"""<div style="display: flex; background-color: #1E1E1E; border-radius: 6px; border: 1px solid #333; overflow: hidden; min-height: 80px;"><div style="width: 80px; min-width: 80px; background-color: {color}; color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; box-shadow: 2px 0px 5px rgba(0,0,0,0.3); z-index: 10;">{letra}</div><div style="display: flex; flex-wrap: wrap; padding: 10px; gap: 10px; align-items: center;">"""
         
         for _, row in brawlers_no_tier.iterrows():
-            tooltip = f"{row['brawler_name']} &#10;Win Rate: {row['win_rate']:.1f}% &#10;Pick Rate: {row['pick_rate']:.1f}%"
-            html_tier_list += f"""
-                <div style="position: relative; display: inline-block;">
-                    <img src="{row['brawler_img']}" width="60" style="border: 2px solid {color}; border-radius: 8px; background-color: #000;" title="{tooltip}">
-                </div>
-            """
+            tooltip = f"{row['brawler_name']} &#10;Win Rate: {row['win_rate']:.2f}% &#10;Pick Rate: {row['pick_rate']:.2f}%"
+            row_html += f"""<img src="{row['brawler_img']}" width="60" style="border: 2px solid {color}; border-radius: 8px; background-color: #000;" title="{tooltip}">"""
             
-        html_tier_list += """
-            </div>
-        </div>
-        """
+        row_html += "</div></div>"
+        html_tier_list += row_html
         
     html_tier_list += "</div>"
     
-    # Renderiza a mágica na tela!
+    # Renders the magic!
     st.markdown(html_tier_list, unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # ========================================================
-    # TABELA DE DADOS RAW (OPCIONAL, DENTRO DE UM EXPANDER)
+    # RAW DATA TABLE
     # ========================================================
     with st.expander("📊 View Raw Data Table"):
         st.dataframe(
