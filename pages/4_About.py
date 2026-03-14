@@ -10,6 +10,26 @@ from auth import do_logout
 st.set_page_config(page_title="About — DegStats", page_icon="📖", layout="centered")
 
 # ============================================================
+# 🚫 LIMPANDO O VISUAL (Escondendo menus do Streamlit)
+# ============================================================
+st.markdown("""
+    <style>
+        /* Esconde o cabeçalho superior (Menu Hamburger, Deploy, etc) */
+        [data-testid="stHeader"] {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
+        header {visibility: hidden !important;}
+        
+        /* Esconde o rodapé padrão do Streamlit */
+        footer {visibility: hidden !important; display: none !important;}
+        
+        /* Ajusta o espaço em branco que sobra no topo */
+        .block-container {
+            padding-top: 2rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# ============================================================
 # 2. BIGQUERY CLIENT & AUTHENTICATION GUARD
 # ============================================================
 @st.cache_resource
@@ -65,12 +85,12 @@ st.markdown("Welcome to **DegStats**, your ultimate tool for Brawl Stars competi
 st.markdown("---")
 
 # --- GLOSSARY EXPANDERS ---
-with st.expander("🔍 How the Filters Work", expanded=True):
+with st.expander("🔍 How the Filters Work"):
     st.markdown("""
     The sidebar filters are the heart of DegStats, designed to give you precise control over the data:
     
     - **Smart Cascading:** The filters talk to each other! If you select a specific Map, the "Brawlers" or "Teams" dropdowns will automatically update to show *only* the ones that played on that map.
-    - **Memory Vault:** Your filters travel with you. If you set up a complex filter in the *Overview* page and switch to the *Meta* or *Player Profile* page, your selections remain perfectly intact.
+    - **Memory Vault:** Your filters travel with you. If you set up a complex filter in the *Overview* page and switch to the *Meta* page, your selections remain perfectly intact.
     - **Clear All:** The trash can button at the bottom of the sidebar instantly wipes all the memory and resets the dashboard to its default state.
     """)
 
