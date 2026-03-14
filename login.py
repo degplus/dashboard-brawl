@@ -38,23 +38,30 @@ def check_existing_session(client) -> bool:
 # CAMUFLAGEM DE UI (Esconde itens para não-admins)
 # ============================================================
 def apply_ui_permissions():
-    # Se o e-mail NÃO for o do Admin, injeta código para esconder coisas
+    # O seu código original que esconde o Admin continua aqui em cima:
     if st.session_state.get("user_email") != "android.deg@gmail.com":
-        st.markdown(
-            """
+        st.markdown("""
             <style>
-            /* 1. Oculta QUALQUER link na barra lateral que contenha a palavra 'Admin' */
-            a[href*="Admin"] { 
-                display: none !important; 
-            }
-            
-            /* 2. Oculta o menu de hambúrguer padrão do Streamlit (opcional) */
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
+                a[href*="Admin"] {
+                    display: none !important;
+                }
             </style>
-            """,
-            unsafe_allow_html=True
-        )
+        """, unsafe_allow_html=True)
+        
+    # ==========================================
+    # --- NOVO: SEPARADOR VISUAL DO MENU ---
+    # ==========================================
+    st.markdown("""
+        <style>
+            /* Procura exatamente o item do menu que leva ao "Change_Password" 
+               e desenha uma linha suave acima dele */
+            [data-testid="stSidebarNav"] li:has(a[href*="Change_Password"]) {
+                border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+                margin-top: 15px !important;
+                padding-top: 10px !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
 # ============================================================
 # LOGOUT SEGURO
