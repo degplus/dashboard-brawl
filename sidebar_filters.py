@@ -21,18 +21,16 @@ COL_MAP = {
 # ============================================================
 def render_sidebar_filters(df_dim, player_names, all_player_names):
     
-    # 1. Initialize Session State
-    for key in FILTER_KEYS:
-        if key not in st.session_state:
-            st.session_state[key] = []
+    # 1. Initialize the Vault (O Cofre Mestre)
+    if "filter_vault" not in st.session_state:
+        st.session_state.filter_vault = {k: [] for k in FILTER_KEYS}
 
-    if st.session_state.get("clear_filters", False):
-        for key in FILTER_KEYS:
-            st.session_state[key] = []
-            # Esvazia a memória temporária do botão também
-            if f"widget_{key}" in st.session_state:
-                st.session_state[f"widget_{key}"] = []
-        st.session_state["clear_filters"] = False
+    # Função de Limpeza Total (Callback do botão)
+    def clear_all_filters():
+        for k in FILTER_KEYS:
+            st.session_state.filter_vault[k] = []
+            st.session_state[k] = [] # Limpa o visual do botão
+        st.session_state["h2h_toggle_active"] = False
 
     # 2. Draw Sidebar
     with st.sidebar:
@@ -70,14 +68,14 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
 
         st.markdown("---")
 
-        # Helper to get dynamic options
+        # Helper to get dynamic options (LENDO DO COFRE MESTRE)
         def get_filter_options(exclude_key: str) -> list:
             mask = (df_dim["battle_date"] >= date_start) & (df_dim["battle_date"] <= date_end)
 
             for key, col in COL_MAP.items():
                 if key == exclude_key:
                     continue
-                values = st.session_state.get(key, [])
+                values = st.session_state.filter_vault.get(key, [])
                 if not values:
                     continue
                 if key == "f_player":
@@ -112,35 +110,35 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
 
         is_h2h_mode = False
 
+        # Callback exigido pelo Streamlit para gravar a mudança instantaneamente
+        def update_vault(k):
+            st.session_state.filter_vault[k] = st.session_state[k]
+
         for i, (key, label, emoji) in enumerate(filters_config):
             options = get_filter_options(key)
-            widget_key = f"widget_{key}"
-            
-            # Se o botão nasceu agora (ex: mudou de página), ele pega os dados do Cofre
-            if widget_key not in st.session_state:
-                mochila = st.session_state.get(key, [])
-                st.session_state[widget_key] = [item for item in mochila if item in options]
-                
-            # A função (Callback) que salva no Cofre sempre que o usuário clica
-            def save_filter(k, wk):
-                st.session_state[k] = st.session_state[wk]
 
-            # Desenhamos o filtro
+            # CASCATA: Limpa opções antigas que não servem mais
+            valid_selections = [x for x in st.session_state.filter_vault.get(key, []) if x in options]
+            st.session_state.filter_vault[key] = valid_selections
+            
+            # Sincroniza o visual do botão FORÇADAMENTE com as opções válidas
+            st.session_state[key] = valid_selections
+
             st.multiselect(
                 f"{emoji} {label}",
                 options=options,
-                key=widget_key,
-                on_change=save_filter,
-                kwargs={"k": key, "wk": widget_key},
+                default=valid_selections,
+                key=key,
+                on_change=update_vault,
+                kwargs={"k": key},
                 placeholder=f"All {label.lower()}s..."
             )
             
-            # H2H Mode usa o Cofre oficial (st.session_state[key])
             if key == "f_team":
-                if len(st.session_state[key]) == 2:
+                if len(st.session_state.filter_vault[key]) == 2:
                     is_h2h_mode = st.toggle(
                         "⚔️ H2H Mode (Only Direct Matches)",
-                        value=False,
+                        value=st.session_state.get("h2h_toggle_active", False),
                         key="h2h_toggle_active",
                         help="If active, shows ONLY metrics from games where these two teams played against each other."
                     )
@@ -152,12 +150,10 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
 
         st.markdown("---")
        
-        if any(st.session_state.get(k) for k in FILTER_KEYS):
-            if st.button("🗑️ Clear All Filters", use_container_width=True):
-                st.session_state["clear_filters"] = True
-                st.rerun()
+        if any(st.session_state.filter_vault[k] for k in FILTER_KEYS):
+            st.button("🗑️ Clear All Filters", use_container_width=True, on_click=clear_all_filters)
 
-    # 3. Build Queries
+    # 3. Build Queries (USANDO O COFRE)
     def build_where(use_datetime=False):
         date_col   = "DATE(battle_time)" if use_datetime else "battle_date"
         conds      = [f"{date_col} BETWEEN @d_start AND @d_end"]
@@ -166,9 +162,9 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
             {"name": "d_end",   "bq_type": "DATE", "value": str(date_end)},
         ]
 
-        if is_h2h_mode and len(st.session_state.f_team) == 2:
-            team_a = st.session_state.f_team[0]
-            team_b = st.session_state.f_team[1]
+        if is_h2h_mode and len(st.session_state.filter_vault["f_team"]) == 2:
+            team_a = st.session_state.filter_vault["f_team"][0]
+            team_b = st.session_state.filter_vault["f_team"][1]
             conds.append(f"""
                 game IN (
                     SELECT game FROM `brawl-sandbox.brawl_stats.vw_battles_python`
@@ -189,7 +185,7 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
             """)
 
         for key, col in COL_MAP.items():
-            values = st.session_state.get(key, [])
+            values = st.session_state.filter_vault.get(key, [])
             if not values:
                 continue
             if is_h2h_mode and key == "f_team":
@@ -217,7 +213,7 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
         for key, col in COL_MAP.items():
             if key == "f_team":
                 continue
-            values = st.session_state.get(key, [])
+            values = st.session_state.filter_vault.get(key, [])
             if not values:
                 continue
             if key == "f_player":

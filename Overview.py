@@ -1105,10 +1105,8 @@ else:
         sel_opp = ev_h2h.selection.rows
         if sel_opp:
             opp_name = df_h2h.iloc[sel_opp[0]]["opponent"]
-            
-            # --- NOVO: FUNÇÃO CALLBACK ---
-            # Essa função roda ANTES da página recarregar, evitando o erro
             def apply_h2h_filter():
+                st.session_state.filter_vault["f_team"] = [h2h_team, opp_name]
                 st.session_state["f_team"] = [h2h_team, opp_name]
                 st.session_state["h2h_toggle_active"] = True
             # -----------------------------
@@ -1124,9 +1122,11 @@ else:
             )
 
             if not already_active:
-                def apply_h2h_filter():
-                    st.session_state["f_team"] = [h2h_team, opp_name]
-                    st.session_state["h2h_toggle_active"] = True
+            def apply_h2h_filter():
+                st.session_state.filter_vault["f_team"] = [h2h_team, opp_name]
+                st.session_state["f_team"] = [h2h_team, opp_name]
+                st.session_state["h2h_toggle_active"] = True
+            # -----------------------------
 
                 st.button(
                     f"🌪️ Filter Dashboard: {h2h_team} vs {opp_name}", # <--- Traduzido aqui
