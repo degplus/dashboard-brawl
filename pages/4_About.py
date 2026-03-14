@@ -65,8 +65,16 @@ st.markdown("Welcome to **DegStats**, your ultimate tool for Brawl Stars competi
 st.markdown("---")
 
 # --- GLOSSARY EXPANDERS ---
+with st.expander("🔍 How the Filters Work", expanded=True):
+    st.markdown("""
+    The sidebar filters are the heart of DegStats, designed to give you precise control over the data:
+    
+    - **Smart Cascading:** The filters talk to each other! If you select a specific Map, the "Brawlers" or "Teams" dropdowns will automatically update to show *only* the ones that played on that map.
+    - **Memory Vault:** Your filters travel with you. If you set up a complex filter in the *Overview* page and switch to the *Meta* or *Player Profile* page, your selections remain perfectly intact.
+    - **Clear All:** The trash can button at the bottom of the sidebar instantly wipes all the memory and resets the dashboard to its default state.
+    """)
 
-with st.expander("👑 Meta Score & Tier List", expanded=True):
+with st.expander("👑 Meta Score & Tier List"):
     st.markdown("""
     **How do we define the Meta?** Instead of relying on opinions, our Tier List is purely data-driven. We calculate the **Meta Score** using a standard e-sports formula:
     
@@ -116,6 +124,7 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #888;'>
     <p>Developed with 💙 for the Brawl Stars Competitive Community.</p>
-    <p>© 2024 DegStats. All rights reserved.</p>
+    <p>Feedback, suggestions, or bug reports? Reach out at: <b>android.deg@gmail.com</b></p>
+    <p>© 2026 DegStats. All rights reserved.</p>
 </div>
 """, unsafe_allow_html=True)
