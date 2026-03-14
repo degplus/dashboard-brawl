@@ -10,6 +10,18 @@ from google.cloud import bigquery
 # ============================================================
 st.set_page_config(page_title="Meta — DegStats", page_icon="👑", layout="wide")
 
+# ============================================================
+# 🚫 LIMPANDO O VISUAL (Escondendo menus do Streamlit)
+# ============================================================
+st.markdown("""
+    <style>
+        [data-testid="stHeader"] {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
+        header {visibility: hidden !important;}
+        footer {visibility: hidden !important; display: none !important;}
+    </style>
+""", unsafe_allow_html=True)
+
 def set_gradient_background():
     page_bg_img = """
     <style>

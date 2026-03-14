@@ -109,6 +109,14 @@ with st.expander("🔍 How the Filters Work"):
     - **Clear All:** The trash can button at the bottom of the sidebar instantly wipes all the memory and resets the dashboard to its default state.
     """)
 
+with st.expander("👥 Toggles (Active Roster & Full Squad)"):
+    st.markdown("""
+    Just above the filters, you'll find two important toggles:
+    
+    - **Show only active roster:** When ON, the 'Player' filter will only show members currently active in the organization. Turn it OFF to search for any player that has historically played a tracked match.
+    - **Full Squad Only:** When ON, the dashboard only counts matches where all 3 tracked players from the same team played together. Turn it OFF to include matches where members played in partial squads or solo.
+    """)
+
 with st.expander("👑 Meta Score & Tier List"):
     st.markdown("""
     **How do we define the Meta?** Instead of relying on opinions, our Tier List is purely data-driven. We calculate the **Meta Score** using a standard e-sports formula:

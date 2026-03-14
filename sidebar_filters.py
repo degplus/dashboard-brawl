@@ -1,6 +1,16 @@
 import streamlit as st
 import json
 import datetime
+import time
+from datetime import timezone
+
+# Cria o relógio do cache lendo o secrets
+_tournament_mode = st.secrets.get("tournament_mode", False) if "tournament_mode" in st.secrets else False
+_ttl = 600 if _tournament_mode else 3600
+
+@st.cache_data(ttl=_ttl)
+def get_sidebar_cache_time():
+    return time.time()
 
 # ============================================================
 # CONSTANTS
@@ -152,6 +162,20 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
        
         if any(st.session_state.filter_vault[k] for k in FILTER_KEYS):
             st.button("🗑️ Clear All Filters", use_container_width=True, on_click=clear_all_filters)
+
+        # --- CACHE & REFRESH INFO ---
+        st.markdown("---")
+        cache_ts = get_sidebar_cache_time()
+        loaded_at = datetime.datetime.fromtimestamp(cache_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        mins_ago = int((time.time() - cache_ts) / 60)
+        ago_text = "just now" if mins_ago == 0 else "1 min ago" if mins_ago == 1 else f"{mins_ago} min ago"
+        
+        ttl_mins = _ttl // 60
+        mode_label = "🏆 Tournament Mode" if _tournament_mode else "⚙️ Normal Mode"
+        
+        st.success(f"⚡ Cache loaded at {loaded_at}")
+        st.caption(f"🕐 Updated {ago_text}")
+        st.caption(f"🔄 Refreshing every {ttl_mins} min  |  {mode_label}")
 
     # 3. Build Queries (USANDO O COFRE)
     def build_where(use_datetime=False):
