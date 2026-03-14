@@ -7,7 +7,7 @@ from google.cloud import bigquery
 # ============================================================
 # 1. PAGE CONFIG
 # ============================================================
-st.set_page_config(page_title="META", page_icon="👑", layout="wide")
+st.set_page_config(page_title="META - DegStats", page_icon="👑", layout="wide")
 
 # ============================================================
 # 2. BIGQUERY CLIENT & AUTHENTICATION GUARD

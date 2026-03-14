@@ -29,6 +29,9 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
     if st.session_state.get("clear_filters", False):
         for key in FILTER_KEYS:
             st.session_state[key] = []
+            # Esvazia a memória temporária do botão também
+            if f"widget_{key}" in st.session_state:
+                st.session_state[f"widget_{key}"] = []
         st.session_state["clear_filters"] = False
 
     # 2. Draw Sidebar
@@ -111,24 +114,30 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
 
         for i, (key, label, emoji) in enumerate(filters_config):
             options = get_filter_options(key)
+            widget_key = f"widget_{key}"
             
-            # 1. Olha na mochila o que já estava selecionado (e garante que a opção ainda existe no filtro)
-            mochila = st.session_state.get(key, [])
-            selecionados_salvos = [item for item in mochila if item in options]
-            
-            # 2. Desenha o filtro usando o valor da mochila como padrão (sem usar o key=key)
-            selecionados_agora = st.multiselect(
+            # Se o botão nasceu agora (ex: mudou de página), ele pega os dados do Cofre
+            if widget_key not in st.session_state:
+                mochila = st.session_state.get(key, [])
+                st.session_state[widget_key] = [item for item in mochila if item in options]
+                
+            # A função (Callback) que salva no Cofre sempre que o usuário clica
+            def save_filter(k, wk):
+                st.session_state[k] = st.session_state[wk]
+
+            # Desenhamos o filtro
+            st.multiselect(
                 f"{emoji} {label}",
                 options=options,
-                default=selecionados_salvos,
+                key=widget_key,
+                on_change=save_filter,
+                kwargs={"k": key, "wk": widget_key},
                 placeholder=f"All {label.lower()}s..."
             )
             
-            # 3. Guarda de volta na mochila
-            st.session_state[key] = selecionados_agora
-            
+            # H2H Mode usa o Cofre oficial (st.session_state[key])
             if key == "f_team":
-                if len(st.session_state.f_team) == 2:
+                if len(st.session_state[key]) == 2:
                     is_h2h_mode = st.toggle(
                         "⚔️ H2H Mode (Only Direct Matches)",
                         value=False,
