@@ -1122,10 +1122,10 @@ else:
             )
 
             if not already_active:
-            def apply_h2h_filter():
-                st.session_state.filter_vault["f_team"] = [h2h_team, opp_name]
-                st.session_state["f_team"] = [h2h_team, opp_name]
-                st.session_state["h2h_toggle_active"] = True
+                def apply_h2h_filter():
+                    st.session_state.filter_vault["f_team"] = [h2h_team, opp_name]
+                    st.session_state["f_team"] = [h2h_team, opp_name]
+                    st.session_state["h2h_toggle_active"] = True
             # -----------------------------
 
                 st.button(
