@@ -144,25 +144,26 @@ else:
     df_brawlers["meta_score_pct"] = df_brawlers["meta_score"] * 100 # Converted to percentage for display
     df_brawlers["percentile"] = df_brawlers["meta_score"].rank(pct=True)
 
+    # Nomes limpos para não conflitar com a legenda do Plotly
     def assign_tier(p):
-        if p >= 0.90:   return "👑 S"
-        elif p >= 0.70: return "🟢 A"
-        elif p >= 0.40: return "🟡 B"
-        elif p >= 0.15: return "🟠 C"
-        elif p >= 0.05: return "🔴 D"
-        else:           return "💀 F"
+        if p >= 0.90:   return "S"
+        elif p >= 0.70: return "A"
+        elif p >= 0.40: return "B"
+        elif p >= 0.15: return "C"
+        elif p >= 0.05: return "D"
+        else:           return "F"
 
     df_brawlers["tier"] = df_brawlers["percentile"].apply(assign_tier)
     df_brawlers = df_brawlers.sort_values(by="meta_score", ascending=False).reset_index(drop=True)
 
     # Distinct Colors for each Tier
     tier_colors = {
-        "👑 S": "#E040FB",  # Magenta / Pink
-        "🟢 A": "#9C27B0",  # Purple
-        "🟡 B": "#2196F3",  # Blue
-        "🟠 C": "#4CAF50",  # Green
-        "🔴 D": "#FF9800",  # Orange
-        "💀 F": "#F44336"   # Red
+        "S": "#E040FB",  # Magenta / Pink
+        "A": "#9C27B0",  # Purple
+        "B": "#2196F3",  # Blue
+        "C": "#4CAF50",  # Green
+        "D": "#FF9800",  # Orange
+        "F": "#F44336"   # Red
     }
 
     # ========================================================
@@ -177,9 +178,10 @@ else:
         y="win_rate",
         color="tier",
         hover_name="brawler_name",
-        custom_data=["meta_score_pct"], # Passes our new % score to the tooltip
+        custom_data=["meta_score_pct", "tier"], # Add tier to tooltip variables
         color_discrete_map=tier_colors,
-        labels={"pick_rate": "Pick Rate (%)", "win_rate": "Win Rate (%)"}
+        category_orders={"tier": ["S", "A", "B", "C", "D", "F"]}, # Force legend order
+        labels={"pick_rate": "Pick Rate (%)", "win_rate": "Win Rate (%)", "tier": "Tier"}
     )
     
     # 50% Win Rate baseline
@@ -187,7 +189,7 @@ else:
     
     # Customizing the Tooltip & Opacity
     fig.update_traces(
-        hovertemplate="<b>%{hovertext}</b><br><br>" +
+        hovertemplate="<b>%{hovertext}</b> (Tier %{customdata[1]})<br><br>" +
                       "Pick Rate = %{x:.2f}%<br>" +
                       "Win Rate = %{y:.2f}%<br>" +
                       "Meta Score = %{customdata[0]:.2f}%<extra></extra>",
@@ -206,9 +208,9 @@ else:
     st.caption("Brawlers ranked from best to worst within each tier. Hover over the image to see stats.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # HTML builder: Removing line breaks inside the string to prevent Streamlit Markdown bugs
+    # HTML builder
     html_tier_list = "<div style='display: flex; flex-direction: column; gap: 8px;'>"
-    ordem_tiers = ["👑 S", "🟢 A", "🟡 B", "🟠 C", "🔴 D", "💀 F"]
+    ordem_tiers = ["S", "A", "B", "C", "D", "F"]
     
     for tier in ordem_tiers:
         brawlers_no_tier = df_brawlers[df_brawlers["tier"] == tier]
@@ -216,9 +218,8 @@ else:
             continue
             
         color = tier_colors.get(tier, "#FFFFFF")
-        letra = tier.split(' ')[1]
+        letra = tier
         
-        # Creating a single HTML string line per tier block
         row_html = f"""<div style="display: flex; background-color: #1E1E1E; border-radius: 6px; border: 1px solid #333; overflow: hidden; min-height: 80px;"><div style="width: 80px; min-width: 80px; background-color: {color}; color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; box-shadow: 2px 0px 5px rgba(0,0,0,0.3); z-index: 10;">{letra}</div><div style="display: flex; flex-wrap: wrap; padding: 10px; gap: 10px; align-items: center;">"""
         
         for _, row in brawlers_no_tier.iterrows():
@@ -232,26 +233,4 @@ else:
     
     # Renders the magic!
     st.markdown(html_tier_list, unsafe_allow_html=True)
-
     st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # ========================================================
-    # RAW DATA TABLE
-    # ========================================================
-    with st.expander("📊 View Raw Data Table"):
-        st.dataframe(
-            df_brawlers,
-            use_container_width=True,
-            column_order=["tier", "brawler_img", "brawler_name", "picks", "pick_rate", "wins", "losses", "win_rate"],
-            column_config={
-                "tier":         st.column_config.TextColumn("Tier"),
-                "brawler_img":  st.column_config.ImageColumn(""),
-                "brawler_name": st.column_config.TextColumn("Brawler"),
-                "picks":        st.column_config.NumberColumn("Picks",     format="%d"),
-                "pick_rate":    st.column_config.ProgressColumn("Pick Rate", format="%.1f%%", min_value=0, max_value=100),
-                "wins":         st.column_config.NumberColumn("Wins",      format="%d"),
-                "losses":       st.column_config.NumberColumn("Losses",    format="%d"),
-                "win_rate":     st.column_config.ProgressColumn("Win Rate", format="%.1f%%", min_value=0, max_value=100),
-            },
-            hide_index=True
-        )
