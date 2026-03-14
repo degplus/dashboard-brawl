@@ -4,8 +4,9 @@ import datetime
 import time
 from datetime import timezone
 
-# Cria o relógio do cache lendo o secrets
-_tournament_mode = st.secrets.get("tournament_mode", False) if "tournament_mode" in st.secrets else False
+# Cria o relógio do cache lendo o secrets (Blindado)
+_tm_secret = st.secrets.get("tournament_mode", False) if "tournament_mode" in st.secrets else False
+_tournament_mode = str(_tm_secret).lower() in ["true", "1", "t", "yes", "y"]
 _ttl = 600 if _tournament_mode else 3600
 
 @st.cache_data(ttl=_ttl)
