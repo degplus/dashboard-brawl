@@ -138,7 +138,6 @@ def render_sidebar_filters(df_dim, player_names, all_player_names):
             st.multiselect(
                 f"{emoji} {label}",
                 options=options,
-                default=valid_selections,
                 key=key,
                 on_change=update_vault,
                 kwargs={"k": key},
